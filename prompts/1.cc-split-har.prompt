@@ -1,0 +1,228 @@
+# Role
+你現在是一個前端工程師，你專精系統分析，从已有系统的网络抓包HAR文件中拆解出API。
+
+# Context
+M-Team 目前已经有PC版的前端，我已经在 M-Team 的 PC 版网站访问了一些页面，并且启动了Chrome浏览器的开发者工具，记录下了网络访问记录和响应，存储在了misc/sample-1.har文件中。
+
+# Objective
+从misc/sample-1.har中，找出所有XHR请求，并总结出API。
+
+# Task
+
+本次专注在与{用户登录}相关的API。
+
+- 首先，从misc/sample-1.har中拆分出所有XHR请求
+- 然后找到与本次专注点相关的API，并且使用 OpenAPI 格式來充分地定義所有的 API。
+    - API 的 summary：用一句簡短的句子描述此 API 的「行為」，這個行為會用在之後定義 Gherkin Language spec 時的 "when step" 所以他必須足夠標準、一致，無句型上的變化和彈性，才能被重複使用。好比說，如果 API 為 [DELETE] /api/orders/cancel， Behavior 可寫成 "the customer cancels the order."，但不要寫成 "the customer tries to cancel the order he created"，只要描述「行為」就好而不涵蓋上下文以及其餘部分，更不需要說明任何此行為的後果。
+    - API 的 description：有多行字串 (multilines)。
+- 注意：
+    - 本次HAR文件中的HTTP请求的Content-Type可能不标准，都采用了 multipart/form-data
+
+# Example
+
+## 假設電商 requirement 片段
+
+```
+### 購物車功能需求
+1. 用戶可以將商品加入購物車，每個商品可指定數量
+2. 購物車中的商品數量不得超過該商品的庫存量
+3. 同一商品重複加入時，數量會累加
+4. 用戶只能操作自己的購物車
+
+### 訂單結帳需求  
+1. 用戶可以對購物車內容進行結帳
+2. 結帳前必須驗證所有商品庫存是否足夠
+3. 結帳時會鎖定商品庫存並產生訂單
+4. 訂單金額必須包含商品總價與運費
+5. 用戶必須提供有效的收貨地址
+```
+
+## 對應的 OpenAPI 定義範例
+
+```yaml
+openapi: 3.0.3
+info:
+  title: 電商系統 API
+  description: 線上購物平台後端 API 規格
+  version: 1.0.0
+
+paths:
+  /cart/items:
+    post:
+        summary: "the user adds product to cart"
+        description: |
+         - 用戶可以將商品加入購物車，每個商品可指定數量
+         - 購物車中的商品數量不得超過該商品的庫存量
+         - 同一商品重複加入時，數量會累加
+         - 用戶只能操作自己的購物車
+         - 必須驗證商品存在性與可購買狀態
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productId:
+                  type: string
+                  description: 商品唯一識別碼
+                quantity:
+                  type: integer
+                  minimum: 1
+                  description: 加入數量
+                userId:
+                  type: string
+                  description: 用戶唯一識別碼
+              required:
+                - productId
+                - quantity
+                - userId
+      responses:
+        '200':
+          description: 成功加入購物車
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cartId:
+                    type: string
+                  totalItems:
+                    type: integer
+                  message:
+                    type: string
+        '400':
+          description: 請求參數錯誤
+        '409':
+          description: 庫存不足或商品不存在
+
+  /cart/validate:
+    post:
+        summary: "the user validates cart contents"
+        description: |
+         - 結帳前必須驗證所有商品庫存是否足夠
+         - 檢查商品是否仍在架上販售
+         - 驗證商品價格是否有異動
+         - 計算當前購物車的預估總金額
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  description: 用戶唯一識別碼
+              required:
+                - userId
+      responses:
+        '200':
+          description: 購物車驗證完成
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isValid:
+                    type: boolean
+                  invalidItems:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        productId:
+                          type: string
+                        reason:
+                          type: string
+                        availableStock:
+                          type: integer
+                  estimatedTotal:
+                    type: number
+        '404':
+          description: 購物車不存在
+
+  /orders:
+    post:
+             summary: "the user creates order"
+       description: |
+         - 結帳時會鎖定商品庫存並產生訂單
+         - 訂單金額必須包含商品總價與運費
+         - 用戶必須提供有效的收貨地址
+         - 必須驗證付款方式的有效性
+         - 庫存不足時拒絕創建訂單
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                shippingAddress:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    phone:
+                      type: string
+                    address:
+                      type: string
+                    city:
+                      type: string
+                    zipCode:
+                      type: string
+                  required:
+                    - name
+                    - phone
+                    - address
+                    - city
+                    - zipCode
+                paymentMethod:
+                  type: string
+                  enum: [credit_card, bank_transfer, cash_on_delivery]
+              required:
+                - userId
+                - shippingAddress
+                - paymentMethod
+      responses:
+        '201':
+          description: 訂單創建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orderId:
+                    type: string
+                  totalAmount:
+                    type: number
+                  estimatedDelivery:
+                    type: string
+                    format: date
+        '400':
+          description: 請求參數錯誤或地址無效
+        '409':
+          description: 庫存不足，無法完成訂單
+```
+
+## 重點說明
+
+### Summary 撰寫原則
+- ✅ 正確：`"the user adds product to cart"`
+- ✅ 正確：`"the user validates cart contents"`
+- ✅ 正確：`"the user creates order"`
+- ❌ 錯誤：`"the user tries to add product to their shopping cart"`
+- ❌ 錯誤：`"the user successfully places an order"`
+
+### Description 撰寫原則
+- 直接以條列式呈現精準定義每一條 API Rules，不需要開頭句或說明文字
+- 從 requirement 中提取相關的業務規則
+- 列出所有限制和驗證規則
+- 包含錯誤情況的處理邏輯
+- 確保涵蓋所有邊緣案例
+- 明確說明資料驗證與業務邏輯限制
+
+# Output files
+- 產出一份遵守 OpenAPI 格式的 yml 规格文件於 analysis/login.yml
