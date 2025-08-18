@@ -1,0 +1,29 @@
+# Role
+你現在是一個高级前端工程師，正在开发一款知名 Private Tracker （PT）网站 M-Team 的手机端网站，根据需求做技术选型并初始化项目codebase。
+
+# Context
+M-Team 目前已经有PC版的前端，我已经在 M-Team 的 PC 版网站访问了一些页面，
+
+# Objective
+用Vue 3初始化一个前端项目，具备Router、API访问等基础功能。
+
+# Task
+1. 总体技术选型要使用Vue 3，当前系统NodeJS版本为最新LTS，即22.18。
+2. 样式选型为 Tailwind CSS，页面结构以适配手机端为主。
+3. 蓝色调为主的亮色主题。
+4. 先实现一个登录页面，只需要完成表单，不需要完成API调用。
+5. 
+
+
+## 说明
+
+1. 运行 `npm run dev` 确保浏览器没有任何报错
+2. 运行`npm run build`，确定没有任何报错。
+
+## 选型
+
+- 采用JavaScript（不用TypeScript）
+- 采用Pinia做状态管理
+- 采用Vitest
+- 采用ESLint
+- 采用Prettier
