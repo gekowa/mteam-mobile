@@ -10,7 +10,7 @@
             </div>
           </div>
           <div class="flex items-center space-x-4">
-            <span class="text-sm text-gray-700">欢迎, {{ authStore.user?.username }}</span>
+            <span class="text-sm text-gray-700">欢迎, {{ authStore.user?.username || '用户' }}</span>
             <button
               @click="handleLogout"
               class="text-sm text-red-600 hover:text-red-500"
@@ -28,9 +28,27 @@
         <h2 class="text-2xl font-bold text-gray-900 mb-4">
           欢迎来到 M-Team 移动版
         </h2>
-        <p class="text-gray-600 mb-8">
+        <p class="text-gray-600 mb-4">
           您已成功登录，这里是首页
         </p>
+        
+        <!-- 用户信息卡片 -->
+        <div v-if="authStore.user" class="max-w-md mx-auto bg-white rounded-lg shadow mb-8 p-6">
+          <div class="text-center">
+            <div class="w-16 h-16 mx-auto mb-4 bg-primary-100 rounded-full flex items-center justify-center">
+              <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">{{ authStore.user.username }}</h3>
+            <p v-if="authStore.user.uid" class="text-sm text-gray-500">用户ID: {{ authStore.user.uid }}</p>
+            <div class="mt-4 flex justify-center">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                已登录
+              </span>
+            </div>
+          </div>
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
           <div class="bg-white overflow-hidden shadow rounded-lg">

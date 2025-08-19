@@ -1,0 +1,23 @@
+# Role
+你現在是一個高级前端工程師，正在开发一款知名 Private Tracker （PT）网站 M-Team 的手机端网站，根据需求开发登录页面。
+
+# Context
+M-Team 目前已经有PC版的前端，我已经在 M-Team 的 PC 版网站访问了一些页面，并把对应的后端接口情况，按分类写入到了analysis目录下的yml文件中。
+
+# Objective
+实现登录页面，登录成功后返回首页。
+
+# Task
+
+1. 实现登录逻辑，包括API调用，记住先显示用户名、密码的输入页面，如果用户名、密码正确，再根据响应决定是否显示OTP输入页面。
+2. 登录成功后，把token存入状态管理中，并跳转到主页。
+3. 修改路由，当token不存在的时候，跳转到登录页面。
+4. 开发主页，显示当前登录的用户名。
+5. 所有API调用需要用 multipart/form-data
+6. 如果需要两步验证，则服务端会返回 `{"code":1001,"message":"需要兩步驗證驗","data":["otp","email"]}`。
+7. 登录成功后，服务端会返回`{"code":0,"message":"SUCCESS"}`，同时在HTTP Header Authroization中会返回Token，此时应跳转到主页。
+
+## 说明
+
+1. 运行 `npm run dev` 确保浏览器没有任何报错
+2. 运行`npm run build`，确定没有任何报错。

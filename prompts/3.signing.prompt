@@ -1,0 +1,95 @@
+# Role
+
+你現在是一個高级前端工程師，正在开发一款知名 Private Tracker （PT）网站 M-Team 的手机端网站。
+
+# Context
+
+对于 M-Team 的服务端，每一个 API 请求都需要经过签名才可以访问。每个 API 访问都需要在原先的访问参数上，增加 2 个参数：\_timestamp 和\_sgin（忽略可能的拼写错误），具体算法是从原先已经经过混淆的 JavaScript 代码中扒出来的。
+
+# Objective
+
+扩展一个自定义的 axios 的 request 对象，这样在发起每个 request 来的时候都可以自动添加 \_timestamp 和 \_sgin 参数。
+
+# Task
+
+1. 参考以下代码片段，并尽量以函数体的原本形态集成到项目中，不要用现成的Base64算法。
+
+```javascript
+const env = {
+  server: "https://api.m-team.cc/api",
+  langDefault: "cht",
+  turnstile: "0x4AAAAAAAGmQlZPus1Y93sD",
+  version: "1.1.4",
+  secret: "HLkPcWmycL57mfJt",
+  imgApi: {
+    url: "https://img.m-team.cc/api/1/upload",
+    key: "chv_R_69c9b8590fa411662aecfa580ef6553fedafce215c569b7cadb0fca08e4966b9a7b29272798af37a7d1e45a8984d223179bbc926d814c4fe1c1d2753f362b1b0",
+  },
+};
+
+const _createHmacHelper = function (t) {
+  return function (e, r) {
+    return new g.HMAC.init(t, r).finalize(e);
+  };
+};
+
+const transform2 = function (e, t) {
+  return (function (e) {
+    var t = e.words,
+      n = e.sigBytes,
+      s = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    e.clamp();
+    for (var r = [], o = 0; o < n; o += 3)
+      for (
+        var i =
+            (((t[o >>> 2] >>> (24 - (o % 4) * 8)) & 255) << 16) |
+            (((t[(o + 1) >>> 2] >>> (24 - ((o + 1) % 4) * 8)) & 255) << 8) |
+            ((t[(o + 2) >>> 2] >>> (24 - ((o + 2) % 4) * 8)) & 255),
+          a = 0;
+        a < 4 && o + 0.75 * a < n;
+        a++
+      )
+        r.push(s.charAt((i >>> (6 * (3 - a))) & 63));
+    var l = s.charAt(64);
+    if (l) for (; r.length % 4; ) r.push(l);
+    return r.join("");
+  })(_createHmacHelper());
+};
+
+/**
+ * e: 请求路径，如/login
+ * t: HTTP方法，如POST
+ */
+const L = (e, t) => {
+  const n = {},
+    s = env.secret,
+    r = Date.now(),
+    o = b.parse("".concat(env.server).concat(e)).path || "",
+    a = "".concat(t, "&").concat(o, "&").concat(r);
+  return (n["_timestamp"] = r), (n["_sgin"] = hmacSHA1(a, s)), n;
+};
+
+```
+2. 编写签名方法，并包含单元测试。
+单元测试通过经过以下2个sample：
+Sample 1:
+```
+path: "/torrents"
+method: "POST"
+_timestamp: 1755528246007
+_sgin: "g0yk8laAzBxGvdV9nVvUqJNlm4Q="
+```
+
+Sample 2:
+```
+path: "/user/profile"
+method: "POST"
+_timestamp: 1755528362859
+_sgin: "YCFBDpMYc95YExOfBfKAXadc/Yo="
+```
+
+## 说明
+0. 运行单元测试必须全部通过
+1. 运行 `npm run dev` 确保浏览器没有任何报错
+2. 运行`npm run build`，确定没有任何报错
+

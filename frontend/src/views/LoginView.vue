@@ -11,11 +11,27 @@
           登录到 M-Team
         </h2>
         <p class="mt-2 text-center text-sm text-gray-600">
-          输入您的凭据以访问您的账户
+          {{ getStepDescription() }}
         </p>
       </div>
+
+      <!-- 错误提示 -->
+      <div v-if="errorMessage" class="rounded-md bg-red-50 p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">{{ errorMessage }}</h3>
+          </div>
+        </div>
+      </div>
+
       <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
-        <div class="space-y-4">
+        <!-- 用户名密码输入步骤 -->
+        <div v-if="currentStep === 'credentials'" class="space-y-4">
           <div>
             <label for="username" class="block text-sm font-medium text-gray-700">
               用户名
@@ -91,6 +107,53 @@
           </div>
         </div>
 
+        <!-- OTP验证步骤 -->
+        <div v-else-if="currentStep === 'otp'" class="space-y-4">
+          <div>
+            <label for="otpCode" class="block text-sm font-medium text-gray-700">
+              双因子认证代码
+            </label>
+            <div class="mt-1">
+              <input
+                id="otpCode"
+                v-model="form.otpCode"
+                name="otpCode"
+                type="text"
+                autocomplete="one-time-code"
+                required
+                maxlength="6"
+                class="input-field text-center text-lg tracking-widest"
+                placeholder="000000"
+                :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.otpCode }"
+              />
+              <p v-if="errors.otpCode" class="mt-1 text-sm text-red-600">{{ errors.otpCode }}</p>
+            </div>
+            <p class="mt-2 text-sm text-gray-600">
+              请输入您的认证器应用中显示的6位数字代码
+            </p>
+            <!-- 显示支持的验证方式 -->
+            <div v-if="supportedMethods.length > 0" class="mt-3 text-xs text-gray-500">
+              <span>支持的验证方式: </span>
+              <span v-for="(method, index) in supportedMethods" :key="method" class="inline-flex items-center">
+                <span class="px-2 py-1 bg-gray-100 rounded text-gray-700">
+                  {{ method === 'otp' ? 'OTP认证器' : method === 'email' ? '邮箱验证' : method }}
+                </span>
+                <span v-if="index < supportedMethods.length - 1" class="mx-1">•</span>
+              </span>
+            </div>
+          </div>
+          
+          <div class="text-center">
+            <button
+              type="button"
+              @click="goBackToCredentials"
+              class="text-sm text-primary-600 hover:text-primary-500"
+            >
+              ← 返回用户名密码输入
+            </button>
+          </div>
+        </div>
+
         <div>
           <button
             type="submit"
@@ -103,7 +166,7 @@
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             </span>
-            {{ isLoading ? '登录中...' : '登录' }}
+            {{ getButtonText() }}
           </button>
         </div>
 
@@ -124,6 +187,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { authAPI } from '../utils/api'
 
 export default {
   name: 'LoginView',
@@ -133,21 +197,32 @@ export default {
     
     const isLoading = ref(false)
     const showPassword = ref(false)
+    const currentStep = ref('credentials') // 'credentials' | 'otp'
+    const errorMessage = ref('')
+    const supportedMethods = ref([]) // 存储支持的验证方式
     
     const form = reactive({
       username: '',
       password: '',
+      otpCode: '',
       rememberMe: false
     })
     
     const errors = reactive({
       username: '',
-      password: ''
+      password: '',
+      otpCode: ''
     })
     
-    const validateForm = () => {
+    const clearErrors = () => {
       errors.username = ''
       errors.password = ''
+      errors.otpCode = ''
+      errorMessage.value = ''
+    }
+    
+    const validateCredentials = () => {
+      clearErrors()
       
       if (!form.username.trim()) {
         errors.username = '请输入用户名'
@@ -159,38 +234,175 @@ export default {
         return false
       }
       
-      if (form.password.length < 6) {
-        errors.password = '密码长度至少6位'
+      return true
+    }
+    
+    const validateOTP = () => {
+      clearErrors()
+      
+      if (!form.otpCode.trim()) {
+        errors.otpCode = '请输入OTP代码'
+        return false
+      }
+      
+      if (!/^\d{6}$/.test(form.otpCode.trim())) {
+        errors.otpCode = '请输入6位数字OTP代码'
         return false
       }
       
       return true
     }
     
-    const handleSubmit = async () => {
-      if (!validateForm()) {
+    const handleLoginStep = async () => {
+      if (!validateCredentials()) {
         return
       }
       
+      try {
+        const response = await authAPI.login(
+          form.username,
+          form.password,
+          authStore.deviceId
+        )
+        
+        // 检查响应数据
+        const data = response.data
+        const authToken = response.headers['authorization']
+        const newDeviceId = response.headers['did']
+        
+        // 检查响应状态码
+        if (data.code === 0 && authToken) {
+          // 登录成功 (code: 0, message: "SUCCESS") + Authorization header中有token
+          const userData = {
+            username: form.username
+          }
+          authStore.login(userData, authToken, newDeviceId)
+          router.push('/home')
+        } else if (data.code === 1001) {
+          // 需要两步验证，检查支持的验证方式
+          supportedMethods.value = data.data || []
+          if (supportedMethods.value.includes('otp')) {
+            // 支持OTP验证，进入OTP步骤
+            currentStep.value = 'otp'
+            errorMessage.value = '' // 清除错误信息
+          } else {
+            errorMessage.value = data.message || '需要两步验证，但当前不支持的验证方式'
+          }
+        } else if (data.success && authToken) {
+          // 兼容旧的登录成功格式
+          authStore.login(data.user, authToken, newDeviceId)
+          router.push('/home')
+        } else if (data.requireOtp) {
+          // 兼容旧的requireOtp格式
+          authStore.setTempToken(data.tempToken)
+          currentStep.value = 'otp'
+        } else {
+          errorMessage.value = data.message || '登录失败，请重试'
+        }
+      } catch (error) {
+        console.error('登录API错误:', error)
+        
+        if (error.response) {
+          const errorData = error.response.data
+          if (errorData && errorData.error) {
+            errorMessage.value = errorData.error
+          } else {
+            errorMessage.value = '用户名或密码错误'
+          }
+        } else if (error.code === 'NETWORK_ERROR') {
+          errorMessage.value = '网络连接失败，请检查网络设置'
+        } else {
+          errorMessage.value = '登录服务暂时不可用，请稍后再试'
+        }
+      }
+    }
+    
+    const handleOTPStep = async () => {
+      if (!validateOTP()) {
+        return
+      }
+      
+      try {
+        const response = await authAPI.verifyOTP(
+          form.username,
+          form.password,
+          form.otpCode,
+          authStore.deviceId
+        )
+        
+        const data = response.data
+        const authToken = response.headers['authorization']
+        const newDeviceId = response.headers['did']
+        
+        if (data.code === 0 && authToken) {
+          // OTP验证成功 (code: 0, message: "SUCCESS") + Authorization header中有token
+          const userData = {
+            username: form.username
+          }
+          authStore.login(userData, authToken, newDeviceId)
+          router.push('/home')
+        } else if (data.code === 1001) {
+          // 仍然需要两步验证，OTP可能错误
+          errorMessage.value = 'OTP验证码错误，请重新输入'
+        } else if (data.success && authToken) {
+          // 兼容旧的OTP验证成功格式
+          authStore.login(data.user, authToken, newDeviceId)
+          router.push('/home')
+        } else {
+          errorMessage.value = data.message || 'OTP验证失败'
+        }
+      } catch (error) {
+        console.error('OTP验证API错误:', error)
+        
+        if (error.response) {
+          const errorData = error.response.data
+          if (errorData && errorData.error) {
+            errorMessage.value = errorData.error
+          } else {
+            errorMessage.value = 'OTP代码无效，请重新输入'
+          }
+        } else {
+          errorMessage.value = 'OTP验证服务暂时不可用，请稍后再试'
+        }
+      }
+    }
+    
+    const handleSubmit = async () => {
       isLoading.value = true
       
       try {
-        // 模拟API调用
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        // 这里后续会添加真实的API调用
-        authStore.login({
-          username: form.username,
-          id: 1
-        })
-        
-        router.push('/home')
-      } catch (error) {
-        console.error('登录失败:', error)
-        // 处理登录错误
+        if (currentStep.value === 'credentials') {
+          await handleLoginStep()
+        } else if (currentStep.value === 'otp') {
+          await handleOTPStep()
+        }
       } finally {
         isLoading.value = false
       }
+    }
+    
+    const goBackToCredentials = () => {
+      currentStep.value = 'credentials'
+      form.otpCode = ''
+      supportedMethods.value = []
+      clearErrors()
+      authStore.setTempToken(null)
+    }
+    
+    const getButtonText = () => {
+      if (isLoading.value) {
+        return currentStep.value === 'credentials' ? '验证中...' : 'OTP验证中...'
+      }
+      return currentStep.value === 'credentials' ? '登录' : '验证OTP'
+    }
+    
+    const getStepDescription = () => {
+      if (currentStep.value === 'credentials') {
+        return '输入您的凭据以访问您的账户'
+      } else if (currentStep.value === 'otp') {
+        return '您的账户已启用两步验证，请输入双因子认证代码'
+      }
+      return ''
     }
     
     return {
@@ -198,7 +410,13 @@ export default {
       errors,
       isLoading,
       showPassword,
-      handleSubmit
+      currentStep,
+      errorMessage,
+      supportedMethods,
+      handleSubmit,
+      goBackToCredentials,
+      getButtonText,
+      getStepDescription
     }
   }
 }
