@@ -5,6 +5,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const token = ref(localStorage.getItem('auth_token'))
   const deviceId = ref(localStorage.getItem('device_id') || generateDeviceId())
+  const visitorId = ref(localStorage.getItem('visitor_id') || generateVisitorId())
   const tempToken = ref(null) // 用于OTP验证的临时token
   
   const isLoggedIn = computed(() => !!token.value && !!user.value)
@@ -14,6 +15,15 @@ export const useAuthStore = defineStore('auth', () => {
     return Array.from(crypto.getRandomValues(new Uint8Array(16)))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('')
+  }
+
+  // 生成访客ID
+  function generateVisitorId() {
+    const visitorId = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+    localStorage.setItem('visitor_id', visitorId)
+    return visitorId
   }
 
   function login(userData, authToken, newDeviceId) {
@@ -62,13 +72,15 @@ export const useAuthStore = defineStore('auth', () => {
   return { 
     user, 
     token, 
-    deviceId, 
+    deviceId,
+    visitorId, 
     tempToken,
     isLoggedIn, 
     login, 
     logout, 
     setTempToken,
     restoreUserState,
-    generateDeviceId
+    generateDeviceId,
+    generateVisitorId
   }
 })
