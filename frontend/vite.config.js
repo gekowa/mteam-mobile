@@ -17,5 +17,5 @@ export default defineConfig({
     host: '0.0.0.0'
   },
   // Configure for GitHub Pages deployment
-  base: process.env.NODE_ENV === 'production' ? '/mteam-mobile/' : '/'
+  // base: process.env.NODE_ENV === 'production' ? '/mteam-mobile/' : '/'
 })
