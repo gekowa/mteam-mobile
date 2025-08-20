@@ -11,7 +11,7 @@ M-Team 目前已经有PC版的前端，我已经在 M-Team 的 PC 版网站访�
 0. 这个页面只有登录后才可以访问，所以API调用需要带上Token。API信息参见 analysis/torrent_search.md 文件
 1. 列表中的每一项显示内容为：图片、name、smallDescr、size、seeders、leechers、createdDate
 2. 列表页的样式可以采用类似于微信聊天列表的形式，左边显示图片，右边显示文字内容；右边从上到下依次显示name、smallDescr；还需要显示种子数据如size、seeders、leechers、createdDate。
-3. 动作
+
 
 ## 说明
 
