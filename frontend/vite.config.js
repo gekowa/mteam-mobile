@@ -12,5 +12,10 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['vue', 'vue-router', 'pinia']
-  }
+  },
+  server: {
+    host: '0.0.0.0'
+  },
+  // Configure for GitHub Pages deployment
+  base: process.env.NODE_ENV === 'production' ? '/mteam-mobile/' : '/'
 })
