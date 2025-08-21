@@ -43,9 +43,10 @@
           class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="movie">电影</option>
-          <option value="tv">电视剧</option>
+          <option value="tvshow">电视剧</option>
           <option value="music">音乐</option>
-          <option value="other">其他</option>
+          <option value="normal">综合</option>
+          <option value="adult">9KG</option>
         </select>
         <button 
           @click="handleSearch"
@@ -253,7 +254,7 @@ export default {
       visible: 1,
       categories: [],
       pageNumber: 1,
-      pageSize: 20
+      pageSize: 100
     })
     
     // 搜索种子
