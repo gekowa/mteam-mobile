@@ -10,8 +10,8 @@ const createApiClient = () => {
     timeout: 10000,
     headers: {
       'Content-Type': 'multipart/form-data',
-      'version': '1.1.4',
-      'webversion': '1140'
+      'version': env.version,
+      'webversion': parseInt(env.version.split('.').join('')) * 10,
     }
   })
 
