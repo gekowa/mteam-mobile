@@ -145,17 +145,19 @@
 
                 <!-- Seeders -->
                 <span class="flex items-center text-green-600">
-                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <!-- <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18" />
-                  </svg>
+                  </svg> -->
+                  <svg width="8" height="6" viewBox="0 0 8 6" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0.296477 3.58611L2.88648 0.996113C3.27648 0.606113 3.90648 0.606113 4.29648 0.996113L6.88648 3.58611C7.51648 4.21611 7.06648 5.29611 6.17648 5.29611H0.996477C0.106477 5.29611 -0.333523 4.21611 0.296477 3.58611Z" fill="#00BA1B"></path></svg>
                   {{ torrent.status?.seeders || 0 }}
                 </span>
 
                 <!-- Leechers -->
                 <span class="flex items-center text-red-600">
-                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <!-- <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H3" />
-                  </svg>
+                  </svg> -->
+                  <svg width="8" height="6" viewBox="0 0 8 6" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.06436 2.41389L4.47436 5.00389C4.08436 5.39389 3.45436 5.39389 3.06436 5.00389L0.474362 2.41389C-0.155638 1.78389 0.294363 0.703887 1.18436 0.703887L6.36436 0.703887C7.25436 0.703887 7.69436 1.78389 7.06436 2.41389Z" fill="#FE2C55"></path></svg>
                   {{ torrent.status?.leechers || 0 }}
                 </span>
               </div>
