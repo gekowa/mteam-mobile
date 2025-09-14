@@ -8,7 +8,6 @@ M-Team 目前已经有PC版的前端，我已经在 M-Team 的 PC 版网站访�
 从misc/sample-1.har中，找出所有XHR请求，并总结出API。
 
 # Task
-
 本次专注在与{用户登录}相关的API。
 
 - 首先，从misc/sample-1.har中拆分出所有XHR请求

@@ -1,0 +1,20 @@
+# Role
+你現在是一個高级前端工程師，正在开发一款知名 Private Tracker （PT）网站 M-Team 的手机端网站，根据需求开发登录页面。
+
+# Context
+API信息参见 analysis/torrent_search.md 文件
+
+# Objective
+为种子列表页面 TorrentListView.vue 增强功能。
+
+# Task
+0. 
+这个页面只有登录后才可以访问，所以API调用需要带上Token。API信息参见 analysis/torrent_search.md 文件
+1. 列表中的每一项显示内容为：图片、name、smallDescr、size、seeders、leechers、createdDate
+2. 列表页的样式可以采用类似于微信聊天列表的形式，左边显示图片，右边显示文字内容；右边从上到下依次显示name、smallDescr；还需要显示种子数据如size、seeders、leechers、createdDate。
+
+
+## 说明
+
+1. 运行 `npm run dev` 确保浏览器没有任何报错
+2. 运行`npm run build`，确定没有任何报错。
