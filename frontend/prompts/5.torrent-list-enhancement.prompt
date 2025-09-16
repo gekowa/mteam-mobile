@@ -2,17 +2,21 @@
 你現在是一個高级前端工程師，正在开发一款知名 Private Tracker （PT）网站 M-Team 的手机端网站，根据需求开发登录页面。
 
 # Context
-API信息参见 analysis/torrent_search.md 文件
+API信息参见 analysis/torrent_search_full.md 文件
 
 # Objective
 为种子列表页面 TorrentListView.vue 增强功能。
 
 # Task
-0. 
-这个页面只有登录后才可以访问，所以API调用需要带上Token。API信息参见 analysis/torrent_search.md 文件
-1. 列表中的每一项显示内容为：图片、name、smallDescr、size、seeders、leechers、createdDate
-2. 列表页的样式可以采用类似于微信聊天列表的形式，左边显示图片，右边显示文字内容；右边从上到下依次显示name、smallDescr；还需要显示种子数据如size、seeders、leechers、createdDate。
-
+0. 增加按关键词搜索种子的功能
+    0.1 在原先下拉选择显示模式（mode)的下面新增关键词输入框，并将“搜索”按钮移到输入框旁边
+    0.2 输入框应该支持清除
+1. 对于电影和电视剧的大类，用不同的背景色区分显示“置顶”的种子
+    1.1 置顶状态在 status.toppingLevel中，为"0"则不置顶；为"1"用#4fc7171a为背景色；为"2"用#e396291a为背景色
+2. 增加收藏显示与切换功能
+    2.1 在种子图片下面增加显示一个⭐️图标用来表示当前种子是否被收藏
+    2.2 点击⭐️图标，切换收藏状态
+    2.3 显示列表页的时候，应该考虑collection属性值，为true则意味着已经收藏，点亮⭐️，为false则为收藏，不点亮⭐️
 
 ## 说明
 

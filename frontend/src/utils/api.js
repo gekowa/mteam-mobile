@@ -10,8 +10,8 @@ const createApiClient = () => {
     timeout: 10000,
     headers: {
       'Content-Type': 'multipart/form-data',
-      'version': env.version,
-      'webversion': parseInt(env.version.split('.').join('')) * 10,
+      version: env.version,
+      webversion: parseInt(env.version.split('.').join('')) * 10
     }
   })
 
@@ -49,7 +49,7 @@ const createApiClient = () => {
       } else {
         // POST、PUT等请求处理数据格式
         const contentType = config.headers['Content-Type'] || config.headers['content-type']
-        
+
         if (contentType === 'application/json') {
           // JSON格式：直接合并签名参数到数据对象
           if (config.data && typeof config.data === 'object') {
@@ -64,28 +64,28 @@ const createApiClient = () => {
           // FormData格式处理
           if (config.data instanceof FormData) {
             // 如果是FormData，直接添加签名参数
-            Object.keys(signatureParams).forEach(key => {
+            Object.keys(signatureParams).forEach((key) => {
               config.data.append(key, signatureParams[key])
             })
           } else if (config.data && typeof config.data === 'object') {
             // 如果是普通对象，转换为FormData
             const formData = new FormData()
-            
+
             // 添加原有数据
-            Object.keys(config.data).forEach(key => {
+            Object.keys(config.data).forEach((key) => {
               formData.append(key, config.data[key])
             })
-            
+
             // 添加签名参数
-            Object.keys(signatureParams).forEach(key => {
+            Object.keys(signatureParams).forEach((key) => {
               formData.append(key, signatureParams[key])
             })
-            
+
             config.data = formData
           } else {
             // 如果没有数据，创建新的FormData
             const formData = new FormData()
-            Object.keys(signatureParams).forEach(key => {
+            Object.keys(signatureParams).forEach((key) => {
               formData.append(key, signatureParams[key])
             })
             config.data = formData
@@ -111,13 +111,13 @@ const createApiClient = () => {
         // 清除本地存储的认证信息
         localStorage.removeItem('auth_token')
         localStorage.removeItem('user_data')
-        
+
         // 如果是在浏览器环境且有 router，重定向到登录页
         if (typeof window !== 'undefined' && window.location) {
           window.location.href = '/'
         }
       }
-      
+
       console.error('API请求错误:', error)
       return Promise.reject(error)
     }
@@ -150,6 +150,7 @@ export const torrentAPI = {
    * @param {Object} params - 搜索参数
    * @param {string} params.mode - 搜索模式 (movie, tv, music等)
    * @param {number} params.visible - 可见性 (1: 可见)
+   * @param {string} params.keyword - 搜索关键词
    * @param {Array} params.categories - 分类ID数组
    * @param {number} params.pageNumber - 页码 (从1开始)
    * @param {number} params.pageSize - 每页数量
@@ -158,6 +159,7 @@ export const torrentAPI = {
   async searchTorrents({
     mode = 'movie',
     visible = 1,
+    keyword = '',
     categories = [],
     pageNumber = 1,
     pageSize = 20
@@ -166,24 +168,63 @@ export const torrentAPI = {
       // 获取设备ID和访客ID
       const deviceId = localStorage.getItem('device_id')
       const visitorId = localStorage.getItem('visitor_id')
-      
-      const response = await apiClient.post('/torrent/search', {
-        mode,
-        visible,
-        categories,
-        pageNumber,
-        pageSize
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'did': deviceId || '',
-          'visitorid': visitorId || ''
+
+      const response = await apiClient.post(
+        '/torrent/search',
+        {
+          mode,
+          visible,
+          keyword,
+          categories,
+          pageNumber,
+          pageSize
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            did: deviceId || '',
+            visitorid: visitorId || ''
+          }
         }
-      })
-      
+      )
+
       return response
     } catch (error) {
       console.error('种子搜索API错误:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 切换种子收藏状态
+   * @param {string} torrentId - 种子ID
+   * @param {boolean} isCollected - 是否收藏 (true: 收藏, false: 取消收藏)
+   * @returns {Promise} API响应
+   */
+  async toggleTorrentCollection(torrentId, isCollected) {
+    try {
+      // 获取设备ID和访客ID
+      const deviceId = localStorage.getItem('device_id')
+      const visitorId = localStorage.getItem('visitor_id')
+
+      const response = await apiClient.post(
+        '/torrent/collection',
+        {
+          id: torrentId,
+          make: isCollected ? 'true' : 'false'
+        },
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            did: deviceId || '',
+            visitorid: visitorId || ''
+          }
+        }
+      )
+
+      return response
+    } catch (error) {
+      console.error('种子收藏API错误:', error)
       throw error
     }
   }
@@ -213,7 +254,7 @@ export const authAPI = {
 
       const response = await apiClient.post('/login', formData, {
         headers: {
-          'did': deviceId
+          did: deviceId
         }
       })
 
@@ -246,7 +287,7 @@ export const authAPI = {
 
       const response = await apiClient.post('/login', formData, {
         headers: {
-          'did': deviceId
+          did: deviceId
         }
       })
 

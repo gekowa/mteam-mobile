@@ -5,7 +5,7 @@
       <div class="px-4 py-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-3">
-            <button 
+            <button
               @click="$router.go(-1)"
               class="p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
             >
@@ -15,16 +15,16 @@
             </button>
             <h1 class="text-lg font-semibold text-gray-900">种子列表</h1>
           </div>
-          <button 
+          <button
             @click="refreshList"
             :disabled="loading"
             class="p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-50"
           >
-            <svg 
-              class="w-5 h-5" 
+            <svg
+              class="w-5 h-5"
               :class="{ 'animate-spin': loading }"
-              fill="none" 
-              stroke="currentColor" 
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -35,10 +35,10 @@
     </header>
 
     <!-- Search Bar -->
-    <div class="bg-white border-b border-gray-200 px-4 py-3">
+    <div class="bg-white border-b border-gray-200 px-4 py-3 space-y-3">
       <div class="flex space-x-2">
-        <select 
-          v-model="searchParams.mode" 
+        <select
+          v-model="searchParams.mode"
           @change="handleSearch"
           class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
@@ -48,7 +48,27 @@
           <option value="normal">综合</option>
           <option value="adult">9KG</option>
         </select>
-        <button 
+      </div>
+      <div class="flex space-x-2">
+        <div class="flex-1 relative">
+          <input
+            v-model="searchParams.keyword"
+            @keyup.enter="handleSearch"
+            type="text"
+            placeholder="输入关键词搜索..."
+            class="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <button
+            v-if="searchParams.keyword"
+            @click="clearKeyword"
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <button
           @click="handleSearch"
           :disabled="loading"
           class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
@@ -76,7 +96,7 @@
           <div class="ml-3">
             <h3 class="text-sm font-medium text-red-800">加载失败</h3>
             <p class="mt-1 text-sm text-red-700">{{ error }}</p>
-            <button 
+            <button
               @click="handleSearch"
               class="mt-2 text-sm font-medium text-red-800 hover:text-red-600"
             >
@@ -92,7 +112,10 @@
       <div
         v-for="torrent in torrents"
         :key="torrent.id"
-        class="bg-white p-4 hover:bg-gray-50 transition-colors duration-150"
+        :class="[
+          'p-4 hover:bg-gray-50 transition-colors duration-150 cursor-pointer',
+          getStickyBackgroundClass(torrent)
+        ]"
         @click="handleTorrentClick(torrent)"
       >
         <div class="flex space-x-3">
@@ -115,6 +138,24 @@
                 </svg>
               </div>
             </div>
+            <!-- Favorite Star -->
+            <div class="mt-1 flex justify-center">
+              <button
+                @click.stop="toggleFavorite(torrent)"
+                :disabled="torrent.favoriteLoading"
+                class="p-1 hover:bg-gray-100 rounded-full transition-colors duration-150 disabled:opacity-50"
+              >
+                <svg
+                  class="w-4 h-4"
+                  :class="torrent.collection ? 'text-yellow-400 fill-current' : 'text-gray-300'"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <!-- Content -->
@@ -124,8 +165,8 @@
               <h3 class="text-sm font-medium text-gray-900 line-clamp-2 leading-5">
                 {{ truncateText(torrent.name, 60) }}
               </h3>
-              <p 
-                v-if="torrent.smallDescr" 
+              <p
+                v-if="torrent.smallDescr"
                 class="text-xs text-gray-500 mt-1 line-clamp-1"
               >
                 {{ torrent.smallDescr }}
@@ -212,8 +253,8 @@
     </div>
 
     <!-- Load More -->
-    <div 
-      v-if="hasMore && !loading && torrents.length > 0" 
+    <div
+      v-if="hasMore && !loading && torrents.length > 0"
       class="px-4 py-4"
     >
       <button
@@ -243,22 +284,23 @@ export default {
   setup() {
     const router = useRouter()
     const authStore = useAuthStore()
-    
+
     // 响应式数据
     const torrents = ref([])
     const loading = ref(false)
     const loadingMore = ref(false)
     const error = ref('')
     const hasMore = ref(true)
-    
+
     const searchParams = reactive({
       mode: 'movie',
       visible: 1,
+      keyword: '',
       categories: [],
       pageNumber: 1,
       pageSize: 100
     })
-    
+
     // 搜索种子
     const searchTorrents = async (resetList = false) => {
       try {
@@ -274,24 +316,24 @@ export default {
         } else {
           loadingMore.value = true
         }
-        
+
         error.value = ''
-        
+
         const response = await torrentAPI.searchTorrents(searchParams)
-        
+
         if (response.data?.code === '0' && response.data?.data) {
           const newTorrents = response.data.data.data || []
-          
+
           if (resetList) {
             torrents.value = newTorrents
           } else {
             torrents.value.push(...newTorrents)
           }
-          
+
           // 检查是否还有更多数据
           const totalPages = parseInt(response.data.data.totalPages) || 0
           hasMore.value = searchParams.pageNumber < totalPages
-          
+
           if (!resetList) {
             searchParams.pageNumber++
           }
@@ -300,55 +342,102 @@ export default {
         }
       } catch (err) {
         console.error('搜索种子失败:', err)
-        
+
         // 特殊处理认证错误
         if (err.response?.status === 401) {
           authStore.logout()
           router.push('/')
           return
         }
-        
+
         error.value = err.message || '网络错误，请重试'
       } finally {
         loading.value = false
         loadingMore.value = false
       }
     }
-    
+
     // 处理搜索
     const handleSearch = () => {
       searchTorrents(true)
     }
-    
+
     // 刷新列表
     const refreshList = () => {
       searchTorrents(true)
     }
-    
+
     // 加载更多
     const loadMore = () => {
       if (!loadingMore.value && hasMore.value) {
         searchTorrents(false)
       }
     }
-    
+
     // 处理种子点击
     const handleTorrentClick = (torrent) => {
       // 这里可以导航到种子详情页面
       console.log('点击种子:', torrent)
       // router.push(`/torrent/${torrent.id}`)
     }
-    
+
     // 处理图片加载错误
     const handleImageError = (event) => {
       event.target.style.display = 'none'
     }
-    
+
+    // 清除关键词
+    const clearKeyword = () => {
+      searchParams.keyword = ''
+      handleSearch()
+    }
+
+    // 获取置顶种子背景色类名
+    const getStickyBackgroundClass = (torrent) => {
+      // 检查是否为电影或电视剧模式
+      const isMovieOrTv = searchParams.mode === 'movie' || searchParams.mode === 'tvshow'
+
+      if (isMovieOrTv && torrent.status?.toppingLevel && torrent.status.toppingLevel !== '0') {
+        const toppingLevel = torrent.status.toppingLevel
+        if (toppingLevel === '1') {
+          return 'bg-topping-level-1' // #4fc7171a
+        } else if (toppingLevel === '2') {
+          return 'bg-topping-level-2' // #e396291a
+        }
+      }
+      return 'bg-white'
+    }
+
+    // 切换收藏状态
+    const toggleFavorite = async (torrent) => {
+      if (torrent.favoriteLoading) return
+
+      try {
+        // 设置加载状态
+        torrent.favoriteLoading = true
+
+        const newCollectedState = !torrent.collection
+        const response = await torrentAPI.toggleTorrentCollection(torrent.id, newCollectedState)
+
+        if (response.data?.code === '0') {
+          // 更新本地状态
+          torrent.collection = newCollectedState
+        } else {
+          throw new Error(response.data?.message || '收藏操作失败')
+        }
+      } catch (err) {
+        console.error('切换收藏状态失败:', err)
+        error.value = err.message || '收藏操作失败，请重试'
+      } finally {
+        torrent.favoriteLoading = false
+      }
+    }
+
     // 组件挂载时加载数据
     onMounted(() => {
       searchTorrents(true)
     })
-    
+
     return {
       torrents,
       loading,
@@ -361,6 +450,9 @@ export default {
       loadMore,
       handleTorrentClick,
       handleImageError,
+      clearKeyword,
+      getStickyBackgroundClass,
+      toggleFavorite,
       formatFileSize,
       formatDate,
       getDiscountStyle,
@@ -383,5 +475,14 @@ export default {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* 置顶种子背景色 */
+.bg-topping-level-1 {
+  background-color: #4fc7171a;
+}
+
+.bg-topping-level-2 {
+  background-color: #e396291a;
 }
 </style>
