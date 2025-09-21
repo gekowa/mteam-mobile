@@ -238,6 +238,7 @@ import {
   getTeamName 
 } from '../utils/constants'
 import { useAuthStore } from '../stores/auth'
+import { renderBBCodeAndMarkdown } from '../utils/bbcodeRenderer'
 
 export default {
   name: 'TorrentDetailView',
@@ -303,22 +304,9 @@ export default {
     }
 
 
-    // 渲染描述内容
+    // 渲染描述内容（使用 BBCode + Markdown 渲染器）
     const renderDescription = (descr) => {
-      if (!descr) return ''
-      
-      let html = descr
-      
-      // 处理图片标签 [img]url[/img]
-      html = html.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" alt="图片" class="max-w-full h-auto my-2" />')
-      
-      // 处理引用标签 [quote]content[/quote]
-      html = html.replace(/\[quote\]([\s\S]*?)\[\/quote\]/g, '<blockquote class="border-l-4 border-gray-300 pl-4 my-2 text-gray-600 italic">$1</blockquote>')
-      
-      // 处理换行
-      html = html.replace(/\r\n/g, '<br>').replace(/\n/g, '<br>')
-      
-      return html
+      return renderBBCodeAndMarkdown(descr)
     }
 
     // 监听路由参数变化
@@ -361,18 +349,130 @@ export default {
 </script>
 
 <style scoped>
+/* 图片样式 */
 .prose img {
   max-width: 100%;
   height: auto;
   border-radius: 0.375rem;
   margin: 0.5rem 0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
+/* 引用块样式 */
 .prose blockquote {
   border-left: 4px solid #d1d5db;
   padding-left: 1rem;
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  background-color: #f9fafb;
+  border-radius: 0 0.375rem 0.375rem 0;
+}
+
+/* 代码块样式 */
+.prose pre {
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
   margin: 0.5rem 0;
-  color: #6b7280;
+  overflow-x: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.prose code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+}
+
+/* 链接样式 */
+.prose a {
+  color: #2563eb;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.prose a:hover {
+  color: #1d4ed8;
+}
+
+/* 列表样式 */
+.prose ul, .prose ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.prose li {
+  margin: 0.25rem 0;
+  line-height: 1.5;
+}
+
+/* 段落样式 */
+.prose p {
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+}
+
+/* Markdown 标题样式 */
+.prose h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.prose h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.prose h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+/* 文本对齐 */
+.prose .text-center {
+  text-align: center;
+}
+
+.prose .text-left {
+  text-align: left;
+}
+
+.prose .text-right {
+  text-align: right;
+}
+
+/* 文本装饰 */
+.prose strong {
+  font-weight: 600;
+}
+
+.prose em {
   font-style: italic;
+}
+
+.prose u {
+  text-decoration: underline;
+}
+
+.prose del {
+  text-decoration: line-through;
+  opacity: 0.7;
 }
 </style>

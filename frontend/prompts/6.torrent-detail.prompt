@@ -21,7 +21,7 @@ M-Team 目前已经有PC版的前端，我已经在 M-Team 的 PC 版网站访�
         2.1.1 其中有部分内容在接口中给的是编码，如team为9代表M-Team，countries为2代表United States，这些枚举值需要单独维护，后续可以再完善，目前先放在单独的变量里维护即可。
     2.1 显示所有的labels标签，参考种子列表的显示方式
     2.1 在标签后面，显示种子和豆瓣评分，参考种子列表的方式，但增加imdb和豆瓣的链接，点击可以跳转到imdb或豆瓣。
-    2.1 最后显示descr中的富文本内容，通过阅读 @frontend/analysis/torrent_detail.md 中对descr内容的样本，理解其内容，用正确的方式render。
+    2.1 最后显示descr中的富文本内容，通过阅读 @frontend/analysis/torrent_detail.md 中对descr内容的样本，通过观察，descr应该为markdown格式，按markdown的方式去render。
 
 3. 修改种子列表页面，点击种子列表可以跳转到种子详细页面。
 
