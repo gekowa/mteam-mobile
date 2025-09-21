@@ -204,12 +204,28 @@
               </div>
 
               <!-- Date -->
-              <span>{{ formatDate(torrent.createdDate) }}</span>
+              <span>{{ formatRelativeTime(torrent.createdDate) }}</span>
             </div>
 
             <!-- Tags and Discount -->
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-1">
+                <!-- IMDb Rating -->
+                <span
+                  v-if="torrent.imdbRating"
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                  style="background-color: #f5c518; color: #000;"
+                >
+                  IMDb{{ torrent.imdbRating }}
+                </span>
+                <!-- Douban Rating -->
+                <span
+                  v-if="torrent.doubanRating"
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                  style="background-color: #071; color: #fff;"
+                >
+                  豆{{ torrent.doubanRating }}
+                </span>
                 <!-- Labels -->
                 <span
                   v-for="label in (torrent.labelsNew || []).slice(0, 2)"
@@ -276,7 +292,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { torrentAPI } from '../utils/api'
-import { formatFileSize, formatDate, getDiscountStyle, truncateText } from '../utils/formatters'
+import { formatFileSize, formatDate, formatRelativeTime, getDiscountStyle, truncateText } from '../utils/formatters'
 import { useAuthStore } from '../stores/auth'
 
 export default {
@@ -455,6 +471,7 @@ export default {
       toggleFavorite,
       formatFileSize,
       formatDate,
+      formatRelativeTime,
       getDiscountStyle,
       truncateText
     }

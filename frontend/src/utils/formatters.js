@@ -1,7 +1,48 @@
 /**
+ * 相对时间（仅最大单位）
+ * 规则：xx分钟、xx小时、xx天、x个月；不足1分钟显示“刚刚”
+ * @param {string|number|Date} input - 可被 Date 解析的时间
+ * @returns {string}
+ */
+export function formatRelativeTime(input) {
+  if (!input) return ''
+  try {
+    const date = new Date(input)
+    const now = new Date()
+    let diffMs = now - date
+    // 未来时间处理为“刚刚”
+    if (diffMs < 0) diffMs = 0
+
+    const minute = 60 * 1000
+    const hour = 60 * minute
+    const day = 24 * hour
+    const month = 30 * day
+
+    if (diffMs < minute) return '刚刚'
+    if (diffMs < hour) {
+      const m = Math.floor(diffMs / minute)
+      return `${m}分钟`
+    }
+    if (diffMs < day) {
+      const h = Math.floor(diffMs / hour)
+      return `${h}小时`
+    }
+    if (diffMs < month) {
+      const d = Math.floor(diffMs / day)
+      return `${d}天`
+    }
+    const mo = Math.floor(diffMs / month)
+    return `${mo}个月`
+  } catch (e) {
+    console.error('相对时间格式化错误:', e)
+    return ''
+  }
+} 
+
+/**
  * 格式化文件大小
  * @param {string|number} bytes - 字节数
- * @returns {string} 格式化后的文件大小
+ * @returns {string}
  */
 export function formatFileSize(bytes) {
   if (!bytes || bytes === 0) return '0 B'

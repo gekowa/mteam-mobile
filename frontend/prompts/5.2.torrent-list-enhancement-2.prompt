@@ -1,0 +1,27 @@
+# Role
+你現在是一個高级前端工程師，正在开发一款知名 Private Tracker （PT）网站 M-Team 的手机端网站，根据需求开发登录页面。
+
+# Context
+API信息参见 analysis/torrent_search_full.md 和 analysis/torrent_search_full.md 文件
+
+# Objective
+为种子列表页面 TorrentListView.vue 增强功能。
+
+# Task
+0. 增加显示IMDB评分的功能
+    0.1 字段名为imdbRating
+    0.1 在每个种子标签显示的最前面，
+    0.1 用标签一样大小的字体显示
+    0.1 IMDB用黄色背景，#f5c518，黑色文字
+1. 增加显示豆瓣的评分
+    1.1 字段名为doubanRating
+    1.1 在每个种子标签显示的最前面，在IMDB评分后面
+    1.1 用标签一样大小的字体显示
+    1.1 豆瓣用深绿色背景，#071，白色文字
+2. 种子的时间改为用相对时间显示，如xx分钟、xx小时、xx天、x个月
+    2.1 只显示最大的时间维度，如显示天的时候不需要显示小时或分钟
+    
+## 说明
+
+1. 运行 `npm run dev` 确保浏览器没有任何报错
+2. 运行`npm run build`，确定没有任何报错。
