@@ -22,6 +22,12 @@ const router = createRouter({
       name: 'torrents',
       component: () => import('../views/TorrentListView.vue'),
       meta: { requiresAuth: true } // 需要登录才能访问
+    },
+    {
+      path: '/torrent/:id',
+      name: 'torrent-detail',
+      component: () => import('../views/TorrentDetailView.vue'),
+      meta: { requiresAuth: true } // 需要登录才能访问
     }
   ]
 })

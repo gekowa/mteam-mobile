@@ -392,9 +392,8 @@ export default {
 
     // 处理种子点击
     const handleTorrentClick = (torrent) => {
-      // 这里可以导航到种子详情页面
-      console.log('点击种子:', torrent)
-      // router.push(`/torrent/${torrent.id}`)
+      // 导航到种子详情页面
+      router.push(`/torrent/${torrent.id}`)
     }
 
     // 处理图片加载错误

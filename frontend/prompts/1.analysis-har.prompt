@@ -2,25 +2,33 @@
 你現在是一個前端工程師，你專精系統分析，从已有系统的网络抓包HAR文件中拆解出API。
 
 # Context
+
 ## 规定
-- 《API取样文件》：analysis/samples/sample-torrent-collection.har
-- 《分析结果文件》：analysis/torrent_collection.md
-- 《本次分析重点》：收藏种子
+
+- 《API取样文件》：@frontend/analysis/samples/sample-torrent-detail.har
+- 《分析结果文件》：@frontend/analysis/torrent_detail.md
+- 《本次分析重点页面》：种子详细页面  (torrent detail page, URL: /detall/{tid}, i.e., /detail/123456)
 
 M-Team 目前已经有PC版的前端，我已经在 M-Team 的 PC 版网站访问了{种子列表}页面，并且启动了浏览器的开发者工具，记录下了网络访问记录和响应，存储在了 《API取样文件》 文件中。
 
 # Objective
+
 从《API取样文件》中，找出所有XHR请求，并总结出API，写入 《分析结果文件》.
 
 # Task
-本次专注在与《本次分析重点》相关的API。
 
-- 首先，从《API取样文件》中拆分出所有XHR请求
-- 然后找到与本次专注点相关的API，并且使用 OpenAPI 格式來充分地定義所有的 API。
-    - API 的 summary：用一句簡短的句子描述此 API 的「行為」，這個行為會用在之後定義 Gherkin Language spec 時的 "when step" 所以他必須足夠標準、一致，無句型上的變化和彈性，才能被重複使用。好比說，如果 API 為 [DELETE] /api/orders/cancel， Behavior 可寫成 "the customer cancels the order."，但不要寫成 "the customer tries to cancel the order he created"，只要描述「行為」就好而不涵蓋上下文以及其餘部分，更不需要說明任何此行為的後果。
+本次专注在与《本次分析重点页面》相关的API。
+
+1. 《API取样文件》中只包含了《本次分析重点页面》所需的全部XHR请求
+1. 先對照《本次分析重点页面》的網址，把所有相關的XHR請求找出来。
+1. 然后找到与本次专注点相关的API，并且使用 OpenAPI 格式來充分地定義所有的 API。
+    - API 的 summary：用一句簡短的句子描述此 API 的「行為」，這個行為會用在之後定義 Gherkin Language spec 時的 "when step" 所以他必須足夠標準、一致，無句型上的變化和彈性，才能被重複使用。
+    好比說，如果 API 為 [DELETE] /api/orders/cancel， Behavior 可寫成 "the customer cancels the order."，但不要寫成 "the customer tries to cancel the order he created"，只要描述「行為」就好而不涵蓋上下文以及其餘部分，更不需要說明任何此行為的後果。
     - API 的 description：有多行字串 (multilines)。
-- 注意：
-    - 本次HAR文件中的HTTP请求的Content-Type可能不标准，都采用了 multipart/form-data
+    - 【重要!】如果 HAR 文件中包含了完整的 response content（比如完整的JSON），请在《分析结果文件》中写出完整的 response content，这样可以方便编写页面的时候参考采用，不要截取、不要删减。
+
+## 注意：
+    - HAR文件中的HTTP请求的Content-Type可能不标准，都采用了 multipart/form-data
 
 # Example
-以 analysis/torrent-search.md 的格式为准, 它是之前分析过的一个部分参数的例子。
+以 frontend/analysis/torrent-search.md 的格式为准, 它是之前分析过的一个部分参数的例子。

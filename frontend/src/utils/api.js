@@ -227,6 +227,38 @@ export const torrentAPI = {
       console.error('种子收藏API错误:', error)
       throw error
     }
+  },
+
+  /**
+   * 获取种子详情
+   * @param {string} torrentId - 种子ID
+   * @returns {Promise} API响应
+   */
+  async getTorrentDetail(torrentId) {
+    try {
+      // 获取设备ID和访客ID
+      const deviceId = localStorage.getItem('device_id')
+      const visitorId = localStorage.getItem('visitor_id')
+
+      const response = await apiClient.post(
+        '/torrent/detail',
+        {
+          id: torrentId
+        },
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            did: deviceId || '',
+            visitorid: visitorId || ''
+          }
+        }
+      )
+
+      return response
+    } catch (error) {
+      console.error('获取种子详情API错误:', error)
+      throw error
+    }
   }
 }
 

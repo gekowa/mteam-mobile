@@ -1,0 +1,31 @@
+# Role
+你現在是一個高级前端工程師，正在开发一款知名 Private Tracker （PT）网站 M-Team 的手机端网站，根据需求开发「种子详细」页面。
+
+# Context
+M-Team 目前已经有PC版的前端，我已经在 M-Team 的 PC 版网站访问了「种子详细」页面，并把对应的后端接口情况，按分类写入到了 @frontend/analysis/torrent_detail.md 文件中。
+
+# Objective
+实现种子详细页面。
+页面样式参考豆瓣和IMDB显示影片详细信息的页面样式。
+
+# Task
+0. 这个页面只有登录后才可以访问，所以API调用需要带上Token。API信息参见 @frontend/analysis/torrent_detail.md 文件。只考虑 「/api/torrent/detail」接口返回的内容。
+1. 显示内容需要包括 name、smallDescr（描述）、 size（体积）、 category（类别）、videoCodec (視頻編碼), audioCodec （音頻編碼: AC3(DD)）、解析度、countries（國家/地區）、team（制作组）
+
+   
+2. 详细页的样式可以采用类似于豆瓣和IMDB的形式，左边显示图片，右边显示文字内容；右边从上到下依次显示name、smallDescr
+    2.1 首先在左面显示图片，用imageList中的内容
+    2.1 右面，name要先显示在第一行，用稍大的字体
+    2.1 smallDescr下面显示用更小的字体显示
+    2.1 然后显示size（体积）、 category（类别）、videoCodec (視頻編碼), audioCodec （音頻編碼: AC3(DD)）、解析度、countries（國家/地區）、team（制作组）
+        2.1.1 其中有部分内容在接口中给的是编码，如team为9代表M-Team，countries为2代表United States，这些枚举值需要单独维护，后续可以再完善，目前先放在单独的变量里维护即可。
+    2.1 显示所有的labels标签，参考种子列表的显示方式
+    2.1 在标签后面，显示种子和豆瓣评分，参考种子列表的方式，但增加imdb和豆瓣的链接，点击可以跳转到imdb或豆瓣。
+    2.1 最后显示descr中的富文本内容，通过阅读 @frontend/analysis/torrent_detail.md 中对descr内容的样本，理解其内容，用正确的方式render。
+
+3. 修改种子列表页面，点击种子列表可以跳转到种子详细页面。
+
+## 说明
+
+1. 运行 `npm run dev` 确保浏览器没有任何报错
+2. 运行`npm run build`，确定没有任何报错。
