@@ -4,6 +4,19 @@ import { useAuthStore } from '../stores/auth'
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
+  // 滚动行为配置
+  scrollBehavior(to, from, savedPosition) {
+    // 如果有保存的位置（浏览器前进后退），则恢复到那个位置
+    if (savedPosition) {
+      return savedPosition
+    }
+    // 如果是从种子详情页返回到种子列表页，保持之前的滚动位置
+    if (from.name === 'torrent-detail' && to.name === 'torrents') {
+      return false // 不改变滚动位置
+    }
+    // 其他情况滚动到顶部
+    return { top: 0 }
+  },
   routes: [
     {
       path: '/',
