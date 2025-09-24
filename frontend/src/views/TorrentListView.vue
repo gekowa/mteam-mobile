@@ -283,8 +283,8 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { torrentAPI } from '../utils/api'
 import { formatFileSize, formatDate, formatRelativeTime, getDiscountStyle, truncateText } from '../utils/formatters'
 import { useAuthStore } from '../stores/auth'
@@ -293,6 +293,7 @@ export default {
   name: 'TorrentListView',
   setup() {
     const router = useRouter()
+    const route = useRoute()
     const authStore = useAuthStore()
 
     // 响应式数据
@@ -310,6 +311,43 @@ export default {
       pageNumber: 1,
       pageSize: 100
     })
+
+    // 从URL参数初始化搜索条件
+    const initFromUrlParams = () => {
+      const query = route.query
+      if (query.mode) {
+        searchParams.mode = query.mode
+      } else {
+        searchParams.mode = 'movie'
+      }
+      
+      // 直接设置keyword，如果URL中没有则为空字符串
+      searchParams.keyword = query.keyword || ''
+    }
+
+    // 将搜索参数同步到URL
+    const syncParamsToUrl = (resetPage = false) => {
+      const query = {}
+      
+      query.mode = searchParams.mode
+
+      if (searchParams.keyword) {
+        query.keyword = searchParams.keyword
+      }
+      
+      // 如果重置页面，则不包含页面参数
+      if (!resetPage && searchParams.pageNumber > 1) {
+        query.page = searchParams.pageNumber
+      }
+
+      // 推送到历史记录，但不触发重新加载
+      router.push({
+        path: '/torrents',
+        query
+      }).catch(() => {
+        // 忽略重复导航错误
+      })
+    }
 
     // 搜索种子
     const searchTorrents = async (resetList = false) => {
@@ -369,6 +407,8 @@ export default {
 
     // 处理搜索
     const handleSearch = () => {
+      // 同步参数到URL
+      syncParamsToUrl(true)
       searchTorrents(true)
     }
 
@@ -442,8 +482,19 @@ export default {
       }
     }
 
+    // 监听路由变化，支持浏览器前进后退
+    watch(() => route.query, (newQuery, oldQuery) => {
+      // 只有当查询参数真正改变时才重新搜索
+      if (JSON.stringify(newQuery) !== JSON.stringify(oldQuery)) {
+        initFromUrlParams()
+        searchTorrents(true)
+      }
+    })
+
     // 组件挂载时加载数据
     onMounted(() => {
+      // 首先从URL参数初始化搜索条件
+      initFromUrlParams()
       searchTorrents(true)
     })
 
