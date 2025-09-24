@@ -19,6 +19,7 @@
             @click="refreshList"
             :disabled="loading"
             class="p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+            data-testid="refresh-button"
           >
             <svg
               class="w-5 h-5"
@@ -117,6 +118,7 @@
           getStickyBackgroundClass(torrent)
         ]"
         @click="handleTorrentClick(torrent)"
+        data-testid="torrent-item"
       >
         <div class="flex space-x-3">
           <!-- Image -->
@@ -144,6 +146,7 @@
                 @click.stop="toggleFavorite(torrent)"
                 :disabled="torrent.favoriteLoading"
                 class="p-1 hover:bg-gray-100 rounded-full transition-colors duration-150 disabled:opacity-50"
+                data-testid="favorite-button"
               >
                 <svg
                   class="w-4 h-4"
@@ -302,6 +305,7 @@ export default {
     const loadingMore = ref(false)
     const error = ref('')
     const hasMore = ref(true)
+    const isUpdatingUrl = ref(false)
 
     const searchParams = reactive({
       mode: 'movie',
@@ -340,12 +344,20 @@ export default {
         query.page = searchParams.pageNumber
       }
 
+      // 设置标志，表示正在更新URL
+      isUpdatingUrl.value = true
+      
       // 推送到历史记录，但不触发重新加载
       router.push({
         path: '/torrents',
         query
       }).catch(() => {
         // 忽略重复导航错误
+      }).finally(() => {
+        // 短暂延迟后重置标志
+        setTimeout(() => {
+          isUpdatingUrl.value = false
+        }, 10)
       })
     }
 
@@ -484,12 +496,12 @@ export default {
 
     // 监听路由变化，支持浏览器前进后退
     watch(() => route.query, (newQuery, oldQuery) => {
-      // 只有当查询参数真正改变时才重新搜索
-      if (JSON.stringify(newQuery) !== JSON.stringify(oldQuery)) {
+      // 只有当查询参数真正改变且不是由组件内部更新URL时才重新搜索
+      if (JSON.stringify(newQuery) !== JSON.stringify(oldQuery) && !isUpdatingUrl.value) {
         initFromUrlParams()
         searchTorrents(true)
       }
-    })
+    }, { immediate: false })
 
     // 组件挂载时加载数据
     onMounted(() => {
