@@ -164,6 +164,8 @@ describe('TorrentListView', () => {
     beforeEach(async () => {
       wrapper = mount(TorrentListView)
       await flushPromises()
+      // 清除挂载时的调用记录，测试只关心用户操作后的调用
+      mockTorrentAPI.searchTorrents.mockClear()
     })
 
     it('should handle search with keyword', async () => {

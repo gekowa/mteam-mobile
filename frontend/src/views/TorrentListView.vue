@@ -286,8 +286,8 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter, useRoute, onBeforeRouteUpdate } from 'vue-router'
 import { torrentAPI } from '../utils/api'
 import { formatFileSize, formatDate, formatRelativeTime, getDiscountStyle, truncateText } from '../utils/formatters'
 import { useAuthStore } from '../stores/auth'
@@ -305,7 +305,6 @@ export default {
     const loadingMore = ref(false)
     const error = ref('')
     const hasMore = ref(true)
-    const isUpdatingUrl = ref(false)
 
     const searchParams = reactive({
       mode: 'movie',
@@ -344,8 +343,6 @@ export default {
         query.page = searchParams.pageNumber
       }
 
-      // 设置标志，表示正在更新URL
-      isUpdatingUrl.value = true
       
       // 推送到历史记录，但不触发重新加载
       router.push({
@@ -353,11 +350,6 @@ export default {
         query
       }).catch(() => {
         // 忽略重复导航错误
-      }).finally(() => {
-        // 短暂延迟后重置标志
-        setTimeout(() => {
-          isUpdatingUrl.value = false
-        }, 10)
       })
     }
 
@@ -421,6 +413,7 @@ export default {
     const handleSearch = () => {
       // 同步参数到URL
       syncParamsToUrl(true)
+      // 直接调用搜索
       searchTorrents(true)
     }
 
@@ -494,14 +487,16 @@ export default {
       }
     }
 
-    // 监听路由变化，支持浏览器前进后退
-    watch(() => route.query, (newQuery, oldQuery) => {
-      // 只有当查询参数真正改变且不是由组件内部更新URL时才重新搜索
-      if (JSON.stringify(newQuery) !== JSON.stringify(oldQuery) && !isUpdatingUrl.value) {
+    // 处理路由变化，支持浏览器前进后退
+    onBeforeRouteUpdate((to, from) => {
+      // 只有当查询参数真正改变时才重新搜索
+      if (JSON.stringify(to.query) !== JSON.stringify(from.query)) {
+        // 更新路由对象引用
+        Object.assign(route, to)
         initFromUrlParams()
         searchTorrents(true)
       }
-    }, { immediate: false })
+    })
 
     // 组件挂载时加载数据
     onMounted(() => {

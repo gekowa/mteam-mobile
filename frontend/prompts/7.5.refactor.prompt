@@ -1,0 +1,22 @@
+# Role
+你現在是一個高级前端工程師，正在开发一款知名 Private Tracker （PT）网站 M-Team 的手机端网站，根据需求重构TorrentListView.vue。
+
+
+# Objective
+重构TorrentListView.vue，去掉其对watch的使用
+
+
+# Task
+1. 修改TorrentListView.vue的实现以通过测试
+1. 改善页面逻辑，解决API被多次调用的问题
+
+## 注意
+1. 不能更改TorrentListView.test.js
+
+## 说明
+
+1. 运行 `npm run test` 确保通过所有测试
+1. 运行 `npm run dev` 确保浏览器没有任何报错
+1. 运行`npm run build`，确定没有任何报错。
+
+ultrathink
