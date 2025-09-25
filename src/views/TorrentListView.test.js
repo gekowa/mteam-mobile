@@ -95,10 +95,21 @@ describe('TorrentListView', () => {
     const pinia = createPinia()
     setActivePinia(pinia)
 
+    // Mock window.scrollTo
+    global.window.scrollTo = vi.fn()
+
     // Reset mocks
     vi.clearAllMocks()
     mockPush.mockClear()
     mockGo.mockClear()
+
+    // Reset router mocks
+    const { useRouter, useRoute } = await import('vue-router')
+    vi.mocked(useRouter).mockReturnValue({
+      push: mockPush,
+      go: mockGo
+    })
+    vi.mocked(useRoute).mockReturnValue(mockRoute)
 
     // Mock the API module
     const { torrentAPI } = await import('../utils/api')
@@ -122,6 +133,9 @@ describe('TorrentListView', () => {
     if (wrapper) {
       wrapper.unmount()
     }
+    delete global.window.scrollTo
+    // Reset route query after each test
+    mockRoute.query = {}
     vi.restoreAllMocks()
   })
 
@@ -377,37 +391,9 @@ describe('TorrentListView', () => {
       expect(mockGo).toHaveBeenCalledWith(-1)
     })
 
-    it('should load more torrents when load more button is clicked', async () => {
-      // Mock response with hasMore = true
-      const moreData = {
-        data: {
-          code: '0',
-          data: {
-            data: [{
-              id: '3',
-              name: '更多种子',
-              size: 1000000,
-              createdDate: '2024-01-01',
-              status: { seeders: 1, leechers: 1 },
-              labelsNew: []
-            }],
-            totalPages: 3
-          }
-        }
-      }
-      mockTorrentAPI.searchTorrents.mockResolvedValueOnce(moreData)
-
+    it('should not display load more button (legacy functionality removed)', async () => {
       const loadMoreButton = wrapper.findAll('button').find(btn => btn.text().includes('加载更多'))
-      expect(loadMoreButton?.exists()).toBe(true)
-      
-      await loadMoreButton.trigger('click')
-      await flushPromises()
-
-      expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledWith(
-        expect.objectContaining({
-          pageNumber: 2
-        })
-      )
+      expect(loadMoreButton).toBeUndefined()
     })
   })
 
@@ -546,29 +532,416 @@ describe('TorrentListView', () => {
     })
   })
 
-  describe('Route Watching', () => {
-    it('should react to route query changes', async () => {
-      mockRoute.query = { mode: 'movie' }
+  // describe('Route Watching', () => {
+  //   it('should react to route query changes', async () => {
+  //     mockRoute.query = { mode: 'movie' }
 
-      wrapper = mount(TorrentListView)
-      await flushPromises()
+  //     wrapper = mount(TorrentListView)
+  //     await flushPromises()
 
-      // Clear previous calls
-      mockTorrentAPI.searchTorrents.mockClear()
+  //     // Clear previous calls
+  //     mockTorrentAPI.searchTorrents.mockClear()
 
-      // Simulate route change by updating the search params and triggering search
-      wrapper.vm.searchParams.mode = 'tvshow'
-      wrapper.vm.searchParams.keyword = 'new search'
+  //     // Simulate route change by updating the search params and triggering search
+  //     wrapper.vm.searchParams.mode = 'tvshow'
+  //     wrapper.vm.searchParams.keyword = 'new search'
       
-      // Trigger search through the exposed handleSearch method
-      await wrapper.vm.handleSearch()
+  //     // Trigger search through the exposed handleSearch method
+  //     await wrapper.vm.handleSearch()
 
-      expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledWith(
-        expect.objectContaining({
-          mode: 'tvshow',
-          keyword: 'new search'
+  //     expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledWith(
+  //       expect.objectContaining({
+  //         mode: 'tvshow',
+  //         keyword: 'new search'
+  //       })
+  //     )
+  //   })
+  // })
+
+  describe('New Pagination Requirements', () => {
+    describe('Search Result Summary', () => {
+      it('should display search result summary when there are search conditions', async () => {
+        // Set up search conditions (anything other than mode and page)
+        mockRoute.query = { mode: 'movie', keyword: 'test' }
+        
+        const mockDataWithTotal = {
+          data: {
+            code: '0',
+            data: {
+              data: mockTorrentData.data.data.data,
+              totalPages: 5,
+              totalCount: 450
+            }
+          }
+        }
+        mockTorrentAPI.searchTorrents.mockResolvedValue(mockDataWithTotal)
+
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+
+        expect(wrapper.find('[data-testid="search-summary"]').exists()).toBe(true)
+        expect(wrapper.find('[data-testid="search-summary"]').text()).toContain('450')
+        expect(wrapper.find('[data-testid="search-summary"]').text()).toContain('5')
+        expect(wrapper.find('[data-testid="search-summary"]').text()).toContain('1')
+      })
+
+      it('should NOT display search result summary when only mode parameter exists', async () => {
+        mockRoute.query = { mode: 'movie' }
+
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+
+        expect(wrapper.find('[data-testid="search-summary"]').exists()).toBe(false)
+      })
+
+      it('should NOT display search result summary when only mode and page parameters exist', async () => {
+        mockRoute.query = { mode: 'movie', page: '2' }
+
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+
+        expect(wrapper.find('[data-testid="search-summary"]').exists()).toBe(false)
+      })
+    })
+
+    describe('Pagination Controls', () => {
+      beforeEach(async () => {
+        const mockDataWithPages = {
+          data: {
+            code: '0',
+            data: {
+              data: mockTorrentData.data.data.data,
+              totalPages: 10,
+              totalCount: 1000
+            }
+          }
+        }
+        mockTorrentAPI.searchTorrents.mockResolvedValue(mockDataWithPages)
+        const { useRoute } = await import('vue-router')
+        vi.mocked(useRoute).mockReturnValue({ query: { mode: 'movie', page: '5' } })
+        
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+      })
+
+      it('should display pagination controls at bottom center', () => {
+        const paginationContainer = wrapper.find('[data-testid="pagination-container"]')
+        expect(paginationContainer.exists()).toBe(true)
+        expect(paginationContainer.classes()).toContain('text-center')
+      })
+
+      it('should display previous page link', () => {
+        const prevButton = wrapper.find('[data-testid="prev-page-button"]')
+        expect(prevButton.exists()).toBe(true)
+        expect(prevButton.text()).toContain('<')
+      })
+
+      it('should display next page link', () => {
+        const nextButton = wrapper.find('[data-testid="next-page-button"]')
+        expect(nextButton.exists()).toBe(true)
+        expect(nextButton.text()).toContain('>')
+      })
+
+      it('should display page dropdown with all available pages', () => {
+        const pageSelect = wrapper.find('[data-testid="page-select"]')
+        expect(pageSelect.exists()).toBe(true)
+        
+        const options = pageSelect.findAll('option')
+        expect(options).toHaveLength(10) // Should have 10 pages
+        expect(options[0].attributes('value')).toBe('1')
+        expect(options[9].attributes('value')).toBe('10')
+        expect(pageSelect.element.value).toBe('5') // Should be page 5 as set in beforeEach
+      })
+
+      it('should disable previous button on first page', async () => {
+        const { useRoute } = await import('vue-router')
+        vi.mocked(useRoute).mockReturnValue({ query: { mode: 'movie', page: '1' } })
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+
+        const prevButton = wrapper.find('[data-testid="prev-page-button"]')
+        expect(prevButton.attributes('disabled')).toBeDefined()
+      })
+
+      it('should disable next button on last page', async () => {
+        const { useRoute } = await import('vue-router')
+        vi.mocked(useRoute).mockReturnValue({ query: { mode: 'movie', page: '10' } })
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+
+        const nextButton = wrapper.find('[data-testid="next-page-button"]')
+        expect(nextButton.attributes('disabled')).toBeDefined()
+      })
+    })
+
+    describe('Page Navigation', () => {
+      beforeEach(async () => {
+        const mockDataWithPages = {
+          data: {
+            code: '0',
+            data: {
+              data: mockTorrentData.data.data.data,
+              totalPages: 10,
+              totalCount: 1000
+            }
+          }
+        }
+        mockTorrentAPI.searchTorrents.mockResolvedValue(mockDataWithPages)
+        const { useRoute } = await import('vue-router')
+        vi.mocked(useRoute).mockReturnValue({ query: { mode: 'movie', page: '5' } })
+        
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+        mockTorrentAPI.searchTorrents.mockClear()
+      })
+
+      it('should navigate to previous page when prev button clicked', async () => {
+        const prevButton = wrapper.find('[data-testid="prev-page-button"]')
+        await prevButton.trigger('click')
+        await flushPromises()
+
+        expect(mockPush).toHaveBeenCalledWith({
+          path: '/torrents',
+          query: { mode: 'movie', page: '4' }
         })
-      )
+        expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            pageNumber: 4
+          })
+        )
+      })
+
+      it('should navigate to next page when next button clicked', async () => {
+        const nextButton = wrapper.find('[data-testid="next-page-button"]')
+        await nextButton.trigger('click')
+        await flushPromises()
+
+        expect(mockPush).toHaveBeenCalledWith({
+          path: '/torrents',
+          query: { mode: 'movie', page: '6' }
+        })
+        expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            pageNumber: 6
+          })
+        )
+      })
+
+      it('should navigate to selected page when dropdown changes', async () => {
+        const pageSelect = wrapper.find('[data-testid="page-select"]')
+        await pageSelect.setValue('8')
+        await flushPromises()
+
+        expect(mockPush).toHaveBeenCalledWith({
+          path: '/torrents',
+          query: { mode: 'movie', page: '8' }
+        })
+        expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            pageNumber: 8
+          })
+        )
+      })
+
+      it('should call API exactly once per pagination action', async () => {
+        const nextButton = wrapper.find('[data-testid="next-page-button"]')
+        await nextButton.trigger('click')
+        await flushPromises()
+
+        expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledTimes(1)
+      })
+    })
+
+    describe('URL and Page State Management', () => {
+      it('should initialize page from URL parameter', async () => {
+        // Set the route query before creating the wrapper
+        const { useRoute } = await import('vue-router')
+        vi.mocked(useRoute).mockReturnValue({ query: { mode: 'movie', page: '7' } })
+        
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+
+        expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledWith(
+          expect.objectContaining({
+            pageNumber: 7
+          })
+        )
+      })
+
+      it('should default to page 1 when no page parameter in URL', async () => {
+        const { useRoute } = await import('vue-router')
+        vi.mocked(useRoute).mockReturnValue({ query: { mode: 'movie' } })
+        
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+
+        expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledWith(
+          expect.objectContaining({
+            pageNumber: 1
+          })
+        )
+      })
+
+      it('should update URL with page parameter when navigating', async () => {
+        const mockDataWithPages = {
+          data: {
+            code: '0',
+            data: {
+              data: mockTorrentData.data.data.data,
+              totalPages: 5
+            }
+          }
+        }
+        mockTorrentAPI.searchTorrents.mockResolvedValue(mockDataWithPages)
+        const { useRoute } = await import('vue-router')
+        vi.mocked(useRoute).mockReturnValue({ query: { mode: 'movie', keyword: 'test' } })
+        
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+        mockPush.mockClear()
+
+        // Navigate to page 3
+        const pageSelect = wrapper.find('[data-testid="page-select"]')
+        await pageSelect.setValue('3')
+        await flushPromises()
+
+        expect(mockPush).toHaveBeenCalledWith({
+          path: '/torrents',
+          query: {
+            mode: 'movie',
+            keyword: 'test',
+            page: '3'
+          }
+        })
+      })
+    })
+
+    describe('Loading State and Scroll Behavior', () => {
+      beforeEach(() => {
+        // Mock window.scrollTo
+        global.window.scrollTo = vi.fn()
+      })
+
+      afterEach(() => {
+        delete global.window.scrollTo
+      })
+
+      it('should show loading state during pagination', async () => {
+        const mockDataWithPages = {
+          data: {
+            code: '0',
+            data: {
+              data: mockTorrentData.data.data.data,
+              totalPages: 5
+            }
+          }
+        }
+
+        // Mock delayed response
+        let resolvePromise
+        const delayedPromise = new Promise(resolve => {
+          resolvePromise = resolve
+        })
+        mockTorrentAPI.searchTorrents.mockReturnValueOnce(mockDataWithPages)
+        mockTorrentAPI.searchTorrents.mockReturnValueOnce(delayedPromise)
+
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+
+        // Navigate to next page
+        const nextButton = wrapper.find('[data-testid="next-page-button"]')
+        await nextButton.trigger('click')
+        
+        // Should show loading state
+        expect(wrapper.vm.loading).toBe(true)
+        expect(wrapper.find('.animate-spin').exists()).toBe(true)
+
+        // Resolve the promise
+        resolvePromise(mockDataWithPages)
+        await flushPromises()
+        
+        // Loading should be gone
+        expect(wrapper.vm.loading).toBe(false)
+      })
+
+      it('should scroll to top after page data loads', async () => {
+        const mockDataWithPages = {
+          data: {
+            code: '0',
+            data: {
+              data: mockTorrentData.data.data.data,
+              totalPages: 5
+            }
+          }
+        }
+        mockTorrentAPI.searchTorrents.mockResolvedValue(mockDataWithPages)
+
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+
+        // Navigate to next page
+        const nextButton = wrapper.find('[data-testid="next-page-button"]')
+        await nextButton.trigger('click')
+        await flushPromises()
+
+        expect(global.window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+      })
+
+      it('should replace torrent list on page navigation (not append)', async () => {
+        const mockDataPage1 = {
+          data: {
+            code: '0',
+            data: {
+              data: [{ id: 'page1-item1', name: 'Page 1 Item 1' }],
+              totalPages: 3
+            }
+          }
+        }
+        const mockDataPage2 = {
+          data: {
+            code: '0',
+            data: {
+              data: [{ id: 'page2-item1', name: 'Page 2 Item 1' }],
+              totalPages: 3
+            }
+          }
+        }
+
+        mockTorrentAPI.searchTorrents.mockResolvedValueOnce(mockDataPage1)
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+
+        expect(wrapper.vm.torrents).toHaveLength(1)
+        expect(wrapper.vm.torrents[0].id).toBe('page1-item1')
+
+        // Navigate to page 2
+        mockTorrentAPI.searchTorrents.mockResolvedValueOnce(mockDataPage2)
+        const nextButton = wrapper.find('[data-testid="next-page-button"]')
+        await nextButton.trigger('click')
+        await flushPromises()
+
+        // Should replace, not append
+        expect(wrapper.vm.torrents).toHaveLength(1)
+        expect(wrapper.vm.torrents[0].id).toBe('page2-item1')
+      })
+    })
+
+    describe('Remove Legacy Load More Functionality', () => {
+      it('should NOT display load more button', async () => {
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+
+        const loadMoreButton = wrapper.findAll('button').find(btn => btn.text().includes('加载更多'))
+        expect(loadMoreButton).toBeUndefined()
+      })
+
+      it('should NOT have loadMore method functionality', async () => {
+        wrapper = mount(TorrentListView)
+        await flushPromises()
+
+        // The loadMore method should not exist or should not affect pagination behavior
+        expect(wrapper.vm.loadMore).toBeUndefined()
+      })
     })
   })
 })

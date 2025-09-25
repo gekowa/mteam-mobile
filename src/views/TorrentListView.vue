@@ -79,6 +79,13 @@
       </div>
     </div>
 
+    <!-- Search Result Summary -->
+    <div v-if="showSearchSummary && !loading && torrents.length > 0" class="px-4 py-3 bg-gray-50 border-b border-gray-200" data-testid="search-summary">
+      <p class="text-sm text-gray-600">
+        找到 {{ totalCount }} 个结果，共 {{ totalPages }} 页，当前第 {{ currentPage }} 页
+      </p>
+    </div>
+
     <!-- Loading State -->
     <div v-if="loading && torrents.length === 0" class="flex justify-center items-center py-12">
       <div class="text-center">
@@ -265,28 +272,55 @@
       </div>
     </div>
 
-    <!-- Load More -->
+    <!-- Pagination Controls -->
     <div
-      v-if="hasMore && !loading && torrents.length > 0"
-      class="px-4 py-4"
+      v-if="totalPages > 1 && !loading && torrents.length > 0"
+      class="px-4 py-6 text-center"
+      data-testid="pagination-container"
     >
-      <button
-        @click="loadMore"
-        :disabled="loadingMore"
-        class="w-full py-3 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-      >
-        <span v-if="loadingMore" class="flex items-center justify-center">
-          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
-          加载中...
-        </span>
-        <span v-else>加载更多</span>
-      </button>
+      <div class="flex items-center justify-center space-x-4">
+        <!-- Previous Page Button -->
+        <button
+          @click="goToPrevPage"
+          :disabled="currentPage === 1"
+          class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          data-testid="prev-page-button"
+        >
+          &lt;
+        </button>
+
+        <!-- Page Dropdown -->
+        <select
+          v-model="currentPage"
+          @change="goToPage"
+          class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          data-testid="page-select"
+        >
+          <option
+            v-for="page in totalPages"
+            :key="page"
+            :value="page"
+          >
+            第{{ page }}页
+          </option>
+        </select>
+
+        <!-- Next Page Button -->
+        <button
+          @click="goToNextPage"
+          :disabled="currentPage === totalPages"
+          class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          data-testid="next-page-button"
+        >
+          &gt;
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute, onBeforeRouteUpdate } from 'vue-router'
 import { torrentAPI } from '../utils/api'
 import { formatFileSize, formatDate, formatRelativeTime, getDiscountStyle, truncateText } from '../utils/formatters'
@@ -302,9 +336,10 @@ export default {
     // 响应式数据
     const torrents = ref([])
     const loading = ref(false)
-    const loadingMore = ref(false)
     const error = ref('')
-    const hasMore = ref(true)
+    const totalPages = ref(0)
+    const totalCount = ref(0)
+    const currentPage = ref(1)
 
     const searchParams = reactive({
       mode: 'movie',
@@ -326,10 +361,15 @@ export default {
       
       // 直接设置keyword，如果URL中没有则为空字符串
       searchParams.keyword = query.keyword || ''
+      
+      // 初始化页码
+      const pageFromUrl = parseInt(query.page) || 1
+      searchParams.pageNumber = pageFromUrl
+      currentPage.value = pageFromUrl
     }
 
     // 将搜索参数同步到URL
-    const syncParamsToUrl = (resetPage = false) => {
+    const syncParamsToUrl = (resetPage = false, page = null) => {
       const query = {}
       
       query.mode = searchParams.mode
@@ -338,9 +378,10 @@ export default {
         query.keyword = searchParams.keyword
       }
       
-      // 如果重置页面，则不包含页面参数
-      if (!resetPage && searchParams.pageNumber > 1) {
-        query.page = searchParams.pageNumber
+      // 如果重置页面，则不包含页面参数；否则包含页面参数
+      const pageToUse = page || searchParams.pageNumber
+      if (!resetPage && pageToUse > 1) {
+        query.page = pageToUse.toString()
       }
 
       
@@ -362,11 +403,11 @@ export default {
           return
         }
 
+        loading.value = true
+
         if (resetList) {
-          loading.value = true
           searchParams.pageNumber = 1
-        } else {
-          loadingMore.value = true
+          currentPage.value = 1
         }
 
         error.value = ''
@@ -376,19 +417,19 @@ export default {
         if (response.data?.code === '0' && response.data?.data) {
           const newTorrents = response.data.data.data || []
 
-          if (resetList) {
-            torrents.value = newTorrents
-          } else {
-            torrents.value.push(...newTorrents)
-          }
+          // 总是替换种子列表（不再有loadMore功能）
+          torrents.value = newTorrents
 
-          // 检查是否还有更多数据
-          const totalPages = parseInt(response.data.data.totalPages) || 0
-          hasMore.value = searchParams.pageNumber < totalPages
+          // 更新分页信息
+          const responseTotalPages = parseInt(response.data.data.totalPages) || 0
+          const responseTotalCount = parseInt(response.data.data.totalCount) || 0
+          
+          totalPages.value = responseTotalPages
+          totalCount.value = responseTotalCount
 
-          if (!resetList) {
-            searchParams.pageNumber++
-          }
+          // 滚动到顶部
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+
         } else {
           throw new Error(response.data?.message || '获取种子列表失败')
         }
@@ -405,7 +446,6 @@ export default {
         error.value = err.message || '网络错误，请重试'
       } finally {
         loading.value = false
-        loadingMore.value = false
       }
     }
 
@@ -422,12 +462,42 @@ export default {
       searchTorrents(true)
     }
 
-    // 加载更多
-    const loadMore = () => {
-      if (!loadingMore.value && hasMore.value) {
+    // 分页导航函数
+    const goToPrevPage = () => {
+      if (currentPage.value > 1) {
+        const newPage = currentPage.value - 1
+        searchParams.pageNumber = newPage
+        currentPage.value = newPage
+        syncParamsToUrl(false, newPage)
         searchTorrents(false)
       }
     }
+
+    const goToNextPage = () => {
+      if (currentPage.value < totalPages.value) {
+        const newPage = currentPage.value + 1
+        searchParams.pageNumber = newPage
+        currentPage.value = newPage
+        syncParamsToUrl(false, newPage)
+        searchTorrents(false)
+      }
+    }
+
+    const goToPage = () => {
+      searchParams.pageNumber = currentPage.value
+      syncParamsToUrl(false, currentPage.value)
+      searchTorrents(false)
+    }
+
+    // 计算是否显示搜索结果摘要
+    const showSearchSummary = computed(() => {
+      const query = route.query
+      // 检查是否有除了mode和page之外的搜索条件
+      const hasSearchConditions = Object.keys(query).some(key => 
+        key !== 'mode' && key !== 'page' && query[key]
+      )
+      return hasSearchConditions
+    })
 
     // 处理种子点击
     const handleTorrentClick = (torrent) => {
@@ -488,15 +558,16 @@ export default {
     }
 
     // 处理路由变化，支持浏览器前进后退
-    onBeforeRouteUpdate((to, from) => {
-      // 只有当查询参数真正改变时才重新搜索
-      if (JSON.stringify(to.query) !== JSON.stringify(from.query)) {
-        // 更新路由对象引用
-        Object.assign(route, to)
-        initFromUrlParams()
-        searchTorrents(true)
-      }
-    })
+    // onBeforeRouteUpdate((to, from) => {
+    //   console.log("onBeforeRouteUpdate")
+    //   // 只有当查询参数真正改变时才重新搜索
+    //   if (JSON.stringify(to.query) !== JSON.stringify(from.query)) {
+    //     // 更新路由对象引用
+    //     Object.assign(route, to)
+    //     initFromUrlParams()
+    //     searchTorrents(true)
+    //   }
+    // })
 
     // 组件挂载时加载数据
     onMounted(() => {
@@ -508,13 +579,17 @@ export default {
     return {
       torrents,
       loading,
-      loadingMore,
       error,
-      hasMore,
+      totalPages,
+      totalCount,
+      currentPage,
       searchParams,
+      showSearchSummary,
       handleSearch,
       refreshList,
-      loadMore,
+      goToPrevPage,
+      goToNextPage,
+      goToPage,
       handleTorrentClick,
       handleImageError,
       clearKeyword,
