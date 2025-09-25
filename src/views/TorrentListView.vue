@@ -236,9 +236,9 @@
                 <span
                   v-for="label in (torrent.labelsNew || []).slice(0, 2)"
                   :key="label"
-                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 uppercase"
                 >
-                  {{ label.toUpperCase() }}
+                  {{ label }}
                 </span>
               </div>
 
@@ -397,7 +397,7 @@ export default {
     }
 
     // 搜索种子
-    const searchTorrents = async (resetList = false) => {
+    const searchTorrents = async () => {
       console.log("searchTorrents")
       try {
         // 检查是否已登录
@@ -407,11 +407,6 @@ export default {
         }
 
         loading.value = true
-
-        if (resetList) {
-          searchParams.pageNumber = 1
-          currentPage.value = 1
-        }
 
         error.value = ''
 
@@ -528,7 +523,7 @@ export default {
       // 检查是否为电影或电视剧模式
       const isMovieOrTv = searchParams.mode === 'movie' || searchParams.mode === 'tvshow'
 
-      if (isMovieOrTv && torrent.status?.toppingLevel && torrent.status.toppingLevel !== '0') {
+      if (torrent.status?.toppingLevel && torrent.status.toppingLevel !== '0') {
         const toppingLevel = torrent.status.toppingLevel
         if (toppingLevel === '1') {
           return 'bg-topping-level-1' // #4fc7171a
