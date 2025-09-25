@@ -216,19 +216,21 @@
               <div class="flex items-center space-x-1">
                 <!-- IMDb Rating -->
                 <span
-                  v-if="torrent.imdbRating"
+                  v-if="torrent.imdb && torrent.imdbRating && torrent.imdbRating > 0"
+                  @click.stop="gotoExternalLink(torrent.imdb)"
                   class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
                   style="background-color: #f5c518; color: #000;"
                 >
-                  IMDb{{ torrent.imdbRating }}
+                  IMDb {{ torrent.imdbRating }}
                 </span>
                 <!-- Douban Rating -->
                 <span
-                  v-if="torrent.doubanRating"
+                  v-if="torrent.douban && torrent.doubanRating && torrent.doubanRating > 0"
+                  @click.stop="gotoExternalLink(torrent.douban)"
                   class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
                   style="background-color: #071; color: #fff;"
                 >
-                  豆{{ torrent.doubanRating }}
+                  豆 {{ torrent.doubanRating }}
                 </span>
                 <!-- Labels -->
                 <span
@@ -236,7 +238,7 @@
                   :key="label"
                   class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
                 >
-                  {{ label }}
+                  {{ label.toUpperCase() }}
                 </span>
               </div>
 
@@ -384,7 +386,7 @@ export default {
         query.page = pageToUse.toString()
       }
 
-      
+      console.log("pushing to route")
       // 推送到历史记录，但不触发重新加载
       router.push({
         path: '/torrents',
@@ -396,6 +398,7 @@ export default {
 
     // 搜索种子
     const searchTorrents = async (resetList = false) => {
+      console.log("searchTorrents")
       try {
         // 检查是否已登录
         if (!authStore.isLoggedIn) {
@@ -422,7 +425,7 @@ export default {
 
           // 更新分页信息
           const responseTotalPages = parseInt(response.data.data.totalPages) || 0
-          const responseTotalCount = parseInt(response.data.data.totalCount) || 0
+          const responseTotalCount = parseInt(response.data.data.total) || 0
           
           totalPages.value = responseTotalPages
           totalCount.value = responseTotalCount
@@ -454,7 +457,7 @@ export default {
       // 同步参数到URL
       syncParamsToUrl(true)
       // 直接调用搜索
-      searchTorrents(true)
+      // searchTorrents(true)
     }
 
     // 刷新列表
@@ -469,7 +472,7 @@ export default {
         searchParams.pageNumber = newPage
         currentPage.value = newPage
         syncParamsToUrl(false, newPage)
-        searchTorrents(false)
+        // searchTorrents(false)
       }
     }
 
@@ -479,14 +482,14 @@ export default {
         searchParams.pageNumber = newPage
         currentPage.value = newPage
         syncParamsToUrl(false, newPage)
-        searchTorrents(false)
+        // searchTorrents(false)
       }
     }
 
     const goToPage = () => {
       searchParams.pageNumber = currentPage.value
       syncParamsToUrl(false, currentPage.value)
-      searchTorrents(false)
+      // searchTorrents(false)
     }
 
     // 计算是否显示搜索结果摘要
@@ -508,6 +511,10 @@ export default {
     // 处理图片加载错误
     const handleImageError = (event) => {
       event.target.style.display = 'none'
+    }
+
+    const gotoExternalLink = (link) => {
+      window.open(link, "_blank")
     }
 
     // 清除关键词
@@ -571,6 +578,7 @@ export default {
 
     // 组件挂载时加载数据
     onMounted(() => {
+      console.log("onMounted")
       // 首先从URL参数初始化搜索条件
       initFromUrlParams()
       searchTorrents(true)
@@ -592,6 +600,7 @@ export default {
       goToPage,
       handleTorrentClick,
       handleImageError,
+      gotoExternalLink,
       clearKeyword,
       getStickyBackgroundClass,
       toggleFavorite,

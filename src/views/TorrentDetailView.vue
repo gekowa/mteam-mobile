@@ -168,7 +168,7 @@
                   class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium hover:opacity-80 transition-opacity"
                   style="background-color: #071; color: #fff;"
                 >
-                  豆瓣 {{ torrent.doubanRating }}
+                  豆 {{ torrent.doubanRating }}
                 </a>
               </div>
             </div>
