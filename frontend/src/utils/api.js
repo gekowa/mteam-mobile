@@ -330,3 +330,34 @@ export const authAPI = {
     }
   }
 }
+
+/**
+ * 用户信息API服务
+ */
+export const memberAPI = {
+  /**
+   * 获取当前登录用户的个人资料
+   * @returns {Promise} API响应
+   */
+  async getProfile() {
+    try {
+      const deviceId = localStorage.getItem('device_id')
+      const visitorId = localStorage.getItem('visitor_id')
+
+      const response = await apiClient.post(
+        '/member/profile',
+        {},
+        {
+          headers: {
+            did: deviceId || '',
+            visitorid: visitorId || ''
+          }
+        }
+      )
+      return response
+    } catch (error) {
+      console.error('获取用户资料API错误:', error)
+      throw error
+    }
+  }
+}

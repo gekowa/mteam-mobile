@@ -49,6 +49,35 @@
             </div>
           </div>
         </div>
+
+        <!-- 用户数据统计 -->
+        <div v-if="profileStore.loading" class="text-center text-gray-500">
+          正在加载用户数据...
+        </div>
+        <div v-if="profileStore.error" class="text-center text-red-500">
+          加载失败: {{ profileStore.error }}
+        </div>
+        <div v-if="profileStore.profile" class="max-w-4xl mx-auto bg-white rounded-lg shadow mb-8 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 text-left">数据统计</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div>
+              <p class="text-sm text-gray-500">魔力值</p>
+              <p class="text-xl font-bold text-primary-600">{{ profileStore.profile.memberCount.bonus }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">分享率</p>
+              <p class="text-xl font-bold text-blue-600">{{ profileStore.profile.memberCount.shareRate }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">上传量</p>
+              <p class="text-xl font-bold text-green-600">{{ formatFileSize(profileStore.profile.memberCount.uploaded) }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">下载量</p>
+              <p class="text-xl font-bold text-red-600">{{ formatFileSize(profileStore.profile.memberCount.downloaded) }}</p>
+            </div>
+          </div>
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
           <router-link 
@@ -131,23 +160,33 @@
 </template>
 
 <script>
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useProfileStore } from '../stores/profile'
+import { formatFileSize } from '../utils/formatters'
 
 export default {
   name: 'HomeView',
   setup() {
     const router = useRouter()
     const authStore = useAuthStore()
+    const profileStore = useProfileStore()
     
     const handleLogout = () => {
       authStore.logout()
       router.push('/')
     }
+
+    onMounted(() => {
+      profileStore.fetchProfile()
+    })
     
     return {
       authStore,
-      handleLogout
+      profileStore,
+      handleLogout,
+      formatFileSize
     }
   }
 }

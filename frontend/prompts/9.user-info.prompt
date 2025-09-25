@@ -1,0 +1,23 @@
+# Role
+你現在是一個高级前端工程師，正在开发一款知名 Private Tracker （PT）网站 M-Team 的手机端网站，根据需求开发「用户首页」页面。
+
+# Context
+M-Team 目前已经有PC版的前端，我已经在 M-Team 的 PC 版网站访问了「种子详细」页面，并把对应的后端接口情况，按分类写入到了 @frontend/analysis/torrent_detail.md 文件中。
+
+# Objective
+完善用户首页以显示更多数据。
+
+# Task
+0. 这个页面只有登录后才可以访问，所以API调用需要带上Token。API信息参见 @frontend/analysis/member_profile.md 文件, 只考虑 「memberCount」中的内容
+    0.1 其中
+
+            "bonus"代表魔力值
+            "uploaded"上传量（按MB、GB、TB级别显示，复用已有的函数）
+            "downloaded"下载量（按MB、GB、TB级别显示）
+            "shareRate"分享率"
+   
+
+## 说明
+
+1. 运行 `npm run dev` 确保浏览器没有任何报错
+2. 运行`npm run build`，确定没有任何报错。
