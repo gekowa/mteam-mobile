@@ -291,6 +291,31 @@ export const torrentAPI = {
       console.error('生成下载token API错误:', error)
       throw error
     }
+  },
+
+  async getCategoryList() {
+    try {
+      // 获取设备ID和访客ID
+      const deviceId = localStorage.getItem('device_id')
+      const visitorId = localStorage.getItem('visitor_id')
+
+      const response = await apiClient.post(
+        '/torrent/categoryList',
+        {},
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            did: deviceId || '',
+            visitorid: visitorId || ''
+          }
+        }
+      )
+
+      return response
+    } catch (error) {
+      console.error('CategoryList API错误:', error)
+      throw error
+    }
   }
 }
 

@@ -117,9 +117,138 @@
 
     <!-- Torrent List -->
     <div v-else-if="torrents.length > 0" class="divide-y divide-gray-200">
+      <!-- Big Picture Mode for Adult Content -->
       <div
         v-for="torrent in torrents"
         :key="torrent.id"
+        v-if="isBigPictureMode"
+        :class="[
+          'p-4 hover:bg-gray-50 transition-colors duration-150 cursor-pointer big-picture-mode',
+          getStickyBackgroundClass(torrent)
+        ]"
+        @click="handleTorrentClick(torrent)"
+        data-testid="torrent-item"
+      >
+        <!-- Title -->
+        <h3 class="text-base font-medium text-gray-900 mb-3" data-testid="torrent-title-big">
+          {{ torrent.name }}
+        </h3>
+
+        <!-- Full Width Image -->
+        <div class="w-full mb-3 aspect-ratio-container" data-testid="torrent-big-image">
+          <div class="w-full bg-gray-200 rounded-md overflow-hidden" style="aspect-ratio: 16/9;">
+            <img
+              v-if="torrent.imageList && torrent.imageList[0]"
+              :src="torrent.imageList[0]"
+              :alt="torrent.name"
+              class="w-full h-full object-cover"
+              @error="handleImageError"
+            />
+            <div
+              v-else
+              class="w-full h-full flex items-center justify-center text-gray-400 image-placeholder"
+            >
+              <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Details Section -->
+        <div class="mb-4" data-testid="torrent-details-big">
+          <p v-if="torrent.smallDescr" class="text-sm text-gray-600 mb-2">
+            {{ torrent.smallDescr }}
+          </p>
+
+          <div class="flex items-center space-x-4 text-sm text-gray-500">
+            <!-- File Size -->
+            <span class="flex items-center">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              {{ formatFileSize(torrent.size) }}
+            </span>
+
+            <!-- Seeders -->
+            <span class="flex items-center text-green-600">
+              <svg width="10" height="8" viewBox="0 0 8 6" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0.296477 3.58611L2.88648 0.996113C3.27648 0.606113 3.90648 0.606113 4.29648 0.996113L6.88648 3.58611C7.51648 4.21611 7.06648 5.29611 6.17648 5.29611H0.996477C0.106477 5.29611 -0.333523 4.21611 0.296477 3.58611Z" fill="#00BA1B"></path></svg>
+              {{ torrent.status?.seeders || 0 }}
+            </span>
+
+            <!-- Leechers -->
+            <span class="flex items-center text-red-600">
+              <svg width="10" height="8" viewBox="0 0 8 6" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.06436 2.41389L4.47436 5.00389C4.08436 5.39389 3.45436 5.39389 3.06436 5.00389L0.474362 2.41389C-0.155638 1.78389 0.294363 0.703887 1.18436 0.703887L6.36436 0.703887C7.25436 0.703887 7.69436 1.78389 7.06436 2.41389Z" fill="#FE2C55"></path></svg>
+              {{ torrent.status?.leechers || 0 }}
+            </span>
+
+            <!-- Date -->
+            <span>{{ formatRelativeTime(torrent.createdDate) }}</span>
+          </div>
+        </div>
+
+        <!-- Actions Section -->
+        <div class="flex items-center justify-between" data-testid="torrent-actions-big">
+          <div class="flex items-center space-x-2">
+            <!-- Favorite Button -->
+            <button
+              @click.stop="toggleFavorite(torrent)"
+              :disabled="torrent.favoriteLoading"
+              class="flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm font-medium transition-colors duration-150 disabled:opacity-50"
+              data-testid="favorite-button"
+            >
+              <svg
+                class="w-4 h-4 mr-1"
+                :class="torrent.collection ? 'text-yellow-400 fill-current' : 'text-gray-400'"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+              {{ torrent.collection ? '已收藏' : '收藏' }}
+            </button>
+
+            <!-- Download Button -->
+            <button
+              @click.stop="handleDownload(torrent)"
+              :disabled="torrent.downloadLoading"
+              class="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors duration-150 disabled:opacity-50"
+              data-testid="download-button"
+            >
+              <svg
+                v-if="!torrent.downloadLoading"
+                class="w-4 h-4 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <div
+                v-else
+                class="w-4 h-4 mr-1 animate-spin rounded-full border-2 border-white border-t-transparent"
+              ></div>
+              下载
+            </button>
+          </div>
+
+          <!-- Discount Badge -->
+          <span
+            v-if="torrent.status?.discount && torrent.status.discount !== 'NORMAL'"
+            :class="getDiscountStyle(torrent.status.discount).class"
+            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+          >
+            {{ getDiscountStyle(torrent.status.discount).text }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Regular Mode for Other Content -->
+      <div
+        v-for="torrent in torrents"
+        :key="torrent.id"
+        v-else
         :class="[
           'p-4 hover:bg-gray-50 transition-colors duration-150 cursor-pointer',
           getStickyBackgroundClass(torrent)
@@ -360,10 +489,10 @@ export default {
       } else {
         searchParams.mode = 'movie'
       }
-      
+
       // 直接设置keyword，如果URL中没有则为空字符串
       searchParams.keyword = query.keyword || ''
-      
+
       // 初始化页码
       const pageFromUrl = parseInt(query.page) || 1
       searchParams.pageNumber = pageFromUrl
@@ -373,13 +502,13 @@ export default {
     // 将搜索参数同步到URL
     const syncParamsToUrl = (resetPage = false, page = null) => {
       const query = {}
-      
+
       query.mode = searchParams.mode
 
       if (searchParams.keyword) {
         query.keyword = searchParams.keyword
       }
-      
+
       // 如果重置页面，则不包含页面参数；否则包含页面参数
       const pageToUse = page || searchParams.pageNumber
       if (!resetPage && pageToUse > 1) {
@@ -421,7 +550,7 @@ export default {
           // 更新分页信息
           const responseTotalPages = parseInt(response.data.data.totalPages) || 0
           const responseTotalCount = parseInt(response.data.data.total) || 0
-          
+
           totalPages.value = responseTotalPages
           totalCount.value = responseTotalCount
 
@@ -491,10 +620,15 @@ export default {
     const showSearchSummary = computed(() => {
       const query = route.query
       // 检查是否有除了mode和page之外的搜索条件
-      const hasSearchConditions = Object.keys(query).some(key => 
+      const hasSearchConditions = Object.keys(query).some(key =>
         key !== 'mode' && key !== 'page' && query[key]
       )
       return hasSearchConditions
+    })
+
+    // 计算是否为大图模式 (9KG adult content)
+    const isBigPictureMode = computed(() => {
+      return searchParams.mode === 'adult'
     })
 
     // 处理种子点击
@@ -559,6 +693,30 @@ export default {
       }
     }
 
+    // 处理下载
+    const handleDownload = async (torrent) => {
+      if (torrent.downloadLoading) return
+
+      try {
+        // 设置加载状态
+        torrent.downloadLoading = true
+
+        const response = await torrentAPI.generateDownloadToken(torrent.id)
+
+        if (response.data?.code === '0' && response.data?.data?.downloadUrl) {
+          // 在新窗口中打开下载链接
+          window.open(response.data.data.downloadUrl, '_blank')
+        } else {
+          throw new Error(response.data?.message || '获取下载链接失败')
+        }
+      } catch (err) {
+        console.error('下载失败:', err)
+        error.value = err.message || '下载失败，请重试'
+      } finally {
+        torrent.downloadLoading = false
+      }
+    }
+
     // 处理路由变化，支持浏览器前进后退
     // onBeforeRouteUpdate((to, from) => {
     //   console.log("onBeforeRouteUpdate")
@@ -573,7 +731,8 @@ export default {
 
     // 组件挂载时加载数据
     onMounted(() => {
-      console.log("onMounted")
+      torrentAPI.getCategoryList()
+
       // 首先从URL参数初始化搜索条件
       initFromUrlParams()
       searchTorrents(true)
@@ -588,6 +747,7 @@ export default {
       currentPage,
       searchParams,
       showSearchSummary,
+      isBigPictureMode,
       handleSearch,
       refreshList,
       goToPrevPage,
@@ -599,6 +759,7 @@ export default {
       clearKeyword,
       getStickyBackgroundClass,
       toggleFavorite,
+      handleDownload,
       formatFileSize,
       formatDate,
       formatRelativeTime,

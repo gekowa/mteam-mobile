@@ -115,10 +115,12 @@ describe('TorrentListView', () => {
     const { torrentAPI } = await import('../../utils/api')
     mockTorrentAPI = {
       searchTorrents: vi.fn().mockResolvedValue(mockTorrentData),
-      toggleTorrentCollection: vi.fn().mockResolvedValue({ data: { code: '0' } })
+      toggleTorrentCollection: vi.fn().mockResolvedValue({ data: { code: '0' } }),
+      generateDownloadToken: vi.fn().mockResolvedValue({ data: { code: '0', data: { downloadUrl: 'https://example.com/download/token123' } } })
     }
     vi.mocked(torrentAPI).searchTorrents = mockTorrentAPI.searchTorrents
     vi.mocked(torrentAPI).toggleTorrentCollection = mockTorrentAPI.toggleTorrentCollection
+    vi.mocked(torrentAPI).generateDownloadToken = mockTorrentAPI.generateDownloadToken
 
     // Mock auth store
     const { useAuthStore } = await import('../../stores/auth')
@@ -941,6 +943,225 @@ describe('TorrentListView', () => {
 
         // The loadMore method should not exist or should not affect pagination behavior
         expect(wrapper.vm.loadMore).toBeUndefined()
+      })
+    })
+  })
+
+  describe('9KG Big Picture Mode', () => {
+    const mock9KGTorrent = {
+      id: '9kg1',
+      name: '9KG 测试种子名称',
+      smallDescr: '9KG 测试描述',
+      size: 5368709120, // 5GB
+      createdDate: '2024-01-15T14:30:00Z',
+      imageList: ['https://example.com/9kg-image1.jpg', 'https://example.com/9kg-image2.jpg'],
+      collection: false,
+      status: {
+        seeders: 25,
+        leechers: 8,
+        discount: 'FREE'
+      }
+    }
+
+    const mock9KGTorrentData = {
+      data: {
+        code: '0',
+        data: {
+          data: [mock9KGTorrent],
+          totalPages: 1,
+          total: 1
+        }
+      }
+    }
+
+    beforeEach(async () => {
+      mockTorrentAPI.searchTorrents.mockResolvedValue(mock9KGTorrentData)
+      
+      // Set route to adult mode
+      const { useRoute } = await import('vue-router')
+      vi.mocked(useRoute).mockReturnValue({ query: { mode: 'adult' } })
+    })
+
+    it('should render 9KG torrents in big picture mode when mode is adult', async () => {
+      wrapper = mount(TorrentListView)
+      await flushPromises()
+
+      const torrentItem = wrapper.find('[data-testid="torrent-item"]')
+      expect(torrentItem.exists()).toBe(true)
+      expect(torrentItem.classes()).toContain('big-picture-mode')
+    })
+
+    it('should display torrent name at the top in big picture mode', async () => {
+      wrapper = mount(TorrentListView)
+      await flushPromises()
+
+      const torrentItem = wrapper.find('[data-testid="torrent-item"]')
+      const torrentTitle = torrentItem.find('[data-testid="torrent-title-big"]')
+      expect(torrentTitle.exists()).toBe(true)
+      expect(torrentTitle.text()).toContain('9KG 测试种子名称')
+    })
+
+    it('should display full-width image in big picture mode', async () => {
+      wrapper = mount(TorrentListView)
+      await flushPromises()
+
+      const torrentItem = wrapper.find('[data-testid="torrent-item"]')
+      const bigImage = torrentItem.find('[data-testid="torrent-big-image"]')
+      expect(bigImage.exists()).toBe(true)
+      expect(bigImage.classes()).toContain('w-full')
+      expect(bigImage.find('img').attributes('src')).toBe('https://example.com/9kg-image1.jpg')
+    })
+
+    it('should display details row below image in correct order', async () => {
+      wrapper = mount(TorrentListView)
+      await flushPromises()
+
+      const torrentItem = wrapper.find('[data-testid="torrent-item"]')
+      const detailsSection = torrentItem.find('[data-testid="torrent-details-big"]')
+      
+      expect(detailsSection.exists()).toBe(true)
+      expect(detailsSection.text()).toContain('9KG 测试描述') // smallDescr
+      expect(detailsSection.text()).toContain('5368709120 MB') // size
+      expect(detailsSection.text()).toContain('25') // seeders
+      expect(detailsSection.text()).toContain('8') // leechers
+      expect(detailsSection.text()).toContain('2小时前') // createdDate
+    })
+
+    it('should display actions row at the bottom in big picture mode', async () => {
+      wrapper = mount(TorrentListView)
+      await flushPromises()
+
+      const torrentItem = wrapper.find('[data-testid="torrent-item"]')
+      const actionsSection = torrentItem.find('[data-testid="torrent-actions-big"]')
+      
+      expect(actionsSection.exists()).toBe(true)
+      
+      const favoriteButton = actionsSection.find('[data-testid="favorite-button"]')
+      expect(favoriteButton.exists()).toBe(true)
+      
+      const downloadButton = actionsSection.find('[data-testid="download-button"]')
+      expect(downloadButton.exists()).toBe(true)
+    })
+
+    it('should maintain aspect ratio for big picture mode images', async () => {
+      wrapper = mount(TorrentListView)
+      await flushPromises()
+
+      const torrentItem = wrapper.find('[data-testid="torrent-item"]')
+      const imageContainer = torrentItem.find('[data-testid="torrent-big-image"]')
+      
+      expect(imageContainer.classes()).toContain('aspect-ratio-container')
+    })
+
+    it('should still work with click navigation in big picture mode', async () => {
+      wrapper = mount(TorrentListView)
+      await flushPromises()
+
+      const torrentItem = wrapper.find('[data-testid="torrent-item"]')
+      await torrentItem.trigger('click')
+      
+      expect(mockPush).toHaveBeenCalledWith('/torrent/9kg1')
+    })
+
+    it('should handle favorite toggle in big picture mode', async () => {
+      wrapper = mount(TorrentListView)
+      await flushPromises()
+
+      const favoriteButton = wrapper.find('[data-testid="torrent-actions-big"] [data-testid="favorite-button"]')
+      await favoriteButton.trigger('click')
+      await flushPromises()
+
+      expect(mockTorrentAPI.toggleTorrentCollection).toHaveBeenCalledWith('9kg1', true)
+    })
+
+    it('should display placeholder image when no image available in big picture mode', async () => {
+      const mockDataNoImage = {
+        data: {
+          code: '0',
+          data: {
+            data: [{
+              ...mock9KGTorrent,
+              imageList: null
+            }],
+            totalPages: 1
+          }
+        }
+      }
+      mockTorrentAPI.searchTorrents.mockResolvedValue(mockDataNoImage)
+
+      wrapper = mount(TorrentListView)
+      await flushPromises()
+
+      const torrentItem = wrapper.find('[data-testid="torrent-item"]')
+      const imagePlaceholder = torrentItem.find('[data-testid="torrent-big-image"] .image-placeholder')
+      expect(imagePlaceholder.exists()).toBe(true)
+    })
+
+    it('should NOT render in big picture mode when mode is not adult', async () => {
+      const { useRoute } = await import('vue-router')
+      vi.mocked(useRoute).mockReturnValue({ query: { mode: 'movie' } })
+      
+      wrapper = mount(TorrentListView)
+      await flushPromises()
+
+      const torrentItem = wrapper.find('[data-testid="torrent-item"]')
+      expect(torrentItem.exists()).toBe(true)
+      expect(torrentItem.classes()).not.toContain('big-picture-mode')
+      
+      const bigImage = torrentItem.find('[data-testid="torrent-big-image"]')
+      expect(bigImage.exists()).toBe(false)
+    })
+
+    it('should render download button as functional element in big picture mode', async () => {
+      wrapper = mount(TorrentListView)
+      await flushPromises()
+
+      const downloadButton = wrapper.find('[data-testid="torrent-actions-big"] [data-testid="download-button"]')
+      expect(downloadButton.exists()).toBe(true)
+      expect(downloadButton.text()).toContain('下载')
+    })
+
+    it('should handle download button click in big picture mode', async () => {
+      // Mock window.open
+      global.window.open = vi.fn()
+
+      wrapper = mount(TorrentListView)
+      await flushPromises()
+
+      const downloadButton = wrapper.find('[data-testid="torrent-actions-big"] [data-testid="download-button"]')
+      await downloadButton.trigger('click')
+      await flushPromises()
+
+      expect(mockTorrentAPI.generateDownloadToken).toHaveBeenCalledWith('9kg1')
+      expect(global.window.open).toHaveBeenCalledWith('https://example.com/download/token123', '_blank')
+
+      delete global.window.open
+    })
+
+    it('should handle multiple 9KG torrents in big picture mode', async () => {
+      const multipleData = {
+        data: {
+          code: '0',
+          data: {
+            data: [
+              mock9KGTorrent,
+              { ...mock9KGTorrent, id: '9kg2', name: '9KG 测试种子2' }
+            ],
+            totalPages: 1
+          }
+        }
+      }
+      mockTorrentAPI.searchTorrents.mockResolvedValue(multipleData)
+
+      wrapper = mount(TorrentListView)
+      await flushPromises()
+
+      const torrentItems = wrapper.findAll('[data-testid="torrent-item"]')
+      expect(torrentItems).toHaveLength(2)
+      
+      torrentItems.forEach(item => {
+        expect(item.classes()).toContain('big-picture-mode')
+        expect(item.find('[data-testid="torrent-big-image"]').exists()).toBe(true)
       })
     })
   })
