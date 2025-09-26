@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import TorrentListView from './TorrentListView.vue'
+import TorrentListView from '../TorrentListView.vue'
 import * as VueRouter from 'vue-router'
 import { createPinia, setActivePinia } from 'pinia'
 
 // Mock dependencies
-vi.mock('../utils/api')
-vi.mock('../utils/formatters', () => ({
+vi.mock('../../utils/api')
+vi.mock('../../utils/formatters', () => ({
   formatFileSize: vi.fn((size) => `${size} MB`),
   formatDate: vi.fn((date) => '2024-01-01'),
   formatRelativeTime: vi.fn((date) => '2小时前'),
@@ -18,7 +18,7 @@ vi.mock('../utils/formatters', () => ({
   truncateText: vi.fn((text, length) => text?.length > length ? text.substring(0, length) + '...' : text)
 }))
 
-vi.mock('../stores/auth', () => ({
+vi.mock('../../stores/auth', () => ({
   useAuthStore: vi.fn(() => ({
     isLoggedIn: true,
     logout: vi.fn()

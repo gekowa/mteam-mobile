@@ -5,8 +5,8 @@
 
 ## 规定
 
-- 《API取样文件》：@frontend/analysis/samples/sample-torrent-detail.har
-- 《分析结果文件》：@frontend/analysis/torrent_detail.md
+- 《API取样文件》：@frontend/analysis/samples/sample-download-torrent.har
+- 《分析结果文件》：@frontend/analysis/torrent_download.md
 - 《本次分析重点页面》：种子详细页面  (torrent detail page, URL: /detall/{tid}, i.e., /detail/123456)
 
 M-Team 目前已经有PC版的前端，我已经在 M-Team 的 PC 版网站访问了{种子列表}页面，并且启动了浏览器的开发者工具，记录下了网络访问记录和响应，存储在了 《API取样文件》 文件中。

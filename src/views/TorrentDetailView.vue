@@ -104,10 +104,9 @@
             <!-- Tech Info Grid -->
             <div class="grid grid-cols-2 gap-2 text-xs mb-3">
               <div v-if="torrent.size" class="flex items-center">
-                <span class="text-gray-500 w-12">体积:</span>
                 <span class="text-gray-900">{{ formatFileSize(torrent.size) }}</span>
               </div>
-              <div v-if="torrent.category" class="flex items-center">
+              <!-- <div v-if="torrent.category" class="flex items-center">
                 <span class="text-gray-500 w-12">类别:</span>
                 <span class="text-gray-900">{{ getCategoryName(torrent.category) }}</span>
               </div>
@@ -130,7 +129,7 @@
               <div v-if="torrent.team" class="flex items-center col-span-2">
                 <span class="text-gray-500 w-12">制作组:</span>
                 <span class="text-gray-900">{{ getTeamName(torrent.team) }}</span>
-              </div>
+              </div> -->
             </div>
 
             <!-- Labels and Ratings -->
@@ -176,14 +175,47 @@
         </div>
       </div>
 
-      <!-- Description Section -->
-      <div v-if="torrent.descr" class="border-t border-gray-200">
-        <div class="px-4 py-3">
-          <h3 class="text-sm font-medium text-gray-900 mb-3">详细描述</h3>
-          <div 
-            class="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-            v-html="renderDescription(torrent.descr)"
-          ></div>
+      <!-- Action Buttons Section -->
+      <div class="border-t border-gray-200" data-testid="action-buttons">
+        <div class="px-4 py-4">
+          <div class="flex space-x-3">
+            <!-- Bookmark Button -->
+            <button
+              @click="toggleBookmark"
+              :disabled="bookmarkLoading"
+              data-testid="bookmark-button"
+              class="flex-1 flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg
+                class="w-4 h-4 mr-2"
+                :class="torrent?.collection ? 'text-yellow-400 fill-current' : 'text-gray-400'"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+              {{ torrent?.collection ? '已收藏' : '收藏' }}
+            </button>
+
+            <!-- Download Button -->
+            <button
+              @click="downloadTorrent"
+              :disabled="downloadLoading"
+              data-testid="download-button"
+              class="flex-1 flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg
+                class="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              下载种子
+            </button>
+          </div>
         </div>
       </div>
 
@@ -220,6 +252,19 @@
           </div>
         </div>
       </div>
+
+      <!-- Description Section -->
+      <div v-if="torrent.descr" class="border-t border-gray-200">
+        <div class="px-4 py-3">
+          <h3 class="text-sm font-medium text-gray-900 mb-3">详细描述</h3>
+          <div 
+            class="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+            v-html="renderDescription(torrent.descr)"
+          ></div>
+        </div>
+      </div>
+
+
     </div>
   </div>
 </template>
@@ -251,6 +296,8 @@ export default {
     const torrent = ref(null)
     const loading = ref(false)
     const error = ref('')
+    const bookmarkLoading = ref(false)
+    const downloadLoading = ref(false)
 
 
     // 获取种子详情
@@ -309,6 +356,53 @@ export default {
       return renderBBCodeAndMarkdown(descr)
     }
 
+    // 切换收藏状态
+    const toggleBookmark = async () => {
+      if (!torrent.value || bookmarkLoading.value) return
+
+      try {
+        bookmarkLoading.value = true
+        const newCollectionState = !torrent.value.collection
+        
+        const response = await torrentAPI.toggleTorrentCollection(torrent.value.id, newCollectionState)
+        
+        if (response.data?.code === '0') {
+          // 更新本地状态
+          torrent.value.collection = newCollectionState
+        } else {
+          throw new Error(response.data?.message || '操作失败')
+        }
+      } catch (err) {
+        console.error('切换收藏状态失败:', err)
+        // 可以在这里显示错误提示
+      } finally {
+        bookmarkLoading.value = false
+      }
+    }
+
+    // 下载种子
+    const downloadTorrent = async () => {
+      if (!torrent.value || downloadLoading.value) return
+
+      try {
+        downloadLoading.value = true
+        
+        const response = await torrentAPI.generateDownloadToken(torrent.value.id)
+        
+        if (response.data?.code === '0' && response.data?.data) {
+          // 在新标签页中打开下载链接
+          window.open(response.data.data, '_blank')
+        } else {
+          throw new Error(response.data?.message || '获取下载链接失败')
+        }
+      } catch (err) {
+        console.error('下载种子失败:', err)
+        // 可以在这里显示错误提示
+      } finally {
+        downloadLoading.value = false
+      }
+    }
+
     // 监听路由参数变化
     watch(
       () => route.params.id,
@@ -324,6 +418,9 @@ export default {
     onMounted(() => {
       if (route.params.id) {
         fetchTorrentDetail()
+      } else {
+        // 显示报错"种子ID不能为空"
+        error.value = '种子ID不能为空'
       }
     })
 
@@ -331,9 +428,13 @@ export default {
       torrent,
       loading,
       error,
+      bookmarkLoading,
+      downloadLoading,
       fetchTorrentDetail,
       refreshDetail,
       handleImageError,
+      toggleBookmark,
+      downloadTorrent,
       getCategoryName,
       getVideoCodecName,
       getAudioCodecName,
