@@ -112,7 +112,7 @@ describe('TorrentListView', () => {
     vi.mocked(useRoute).mockReturnValue(mockRoute)
 
     // Mock the API module
-    const { torrentAPI } = await import('../utils/api')
+    const { torrentAPI } = await import('../../utils/api')
     mockTorrentAPI = {
       searchTorrents: vi.fn().mockResolvedValue(mockTorrentData),
       toggleTorrentCollection: vi.fn().mockResolvedValue({ data: { code: '0' } })
@@ -121,7 +121,7 @@ describe('TorrentListView', () => {
     vi.mocked(torrentAPI).toggleTorrentCollection = mockTorrentAPI.toggleTorrentCollection
 
     // Mock auth store
-    const { useAuthStore } = await import('../stores/auth')
+    const { useAuthStore } = await import('../../stores/auth')
     mockAuthStore = {
       isLoggedIn: true,
       logout: vi.fn()
