@@ -1,0 +1,10 @@
+# Objective
+Fix all improper tests:                                                                                                                                          
+
+# Context
+    For we're not calling searchTorrent explicitly on search clicks or page changes, instead we rely on onMounted hook to be triggered after new query is pushed to route, 
+    so we in test we should not spy on searchTorrentAPI, instead, spy on syncParamsToUrl being called and params are sync to URL properly by spy on router.push being called with proper query.                                                                                                                             
+
+   E.g., in handleSearch, remove code that spies on mockTorrentAPI.searchTorrent. Spy on syncParamsToUrl, and spy on router.push being called with query of correct keyword.
+                                                                                                                                                                         
+ultrathink

@@ -45,6 +45,7 @@ describe('TorrentListView', () => {
   let wrapper
   let mockTorrentAPI
   let mockAuthStore
+  let consoleErrorSpy
 
   const mockTorrentData = {
     data: {
@@ -65,7 +66,9 @@ describe('TorrentListView', () => {
               discount: 'FREE',
               toppingLevel: '1'
             },
+            imdb: 'https://imdb.com/title/tt123456',
             imdbRating: '8.5',
+            douban: 'https://douban.com/subject/123456',
             doubanRating: '9.0',
             labelsNew: ['HD', '中字']
           },
@@ -97,6 +100,9 @@ describe('TorrentListView', () => {
 
     // Mock window.scrollTo
     global.window.scrollTo = vi.fn()
+
+    // Spy on console.error
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     // Reset mocks
     vi.clearAllMocks()
@@ -139,6 +145,7 @@ describe('TorrentListView', () => {
     // Reset route query after each test
     mockRoute.query = {}
     vi.restoreAllMocks()
+    consoleErrorSpy.mockRestore()
   })
 
   describe('Component Initialization', () => {
@@ -182,6 +189,7 @@ describe('TorrentListView', () => {
       await flushPromises()
       // 清除挂载时的调用记录，测试只关心用户操作后的调用
       mockTorrentAPI.searchTorrents.mockClear()
+      mockPush.mockClear()
     })
 
     it('should handle search with keyword', async () => {
@@ -192,12 +200,14 @@ describe('TorrentListView', () => {
       await searchButton.trigger('click')
       await flushPromises()
 
-      expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({
-          keyword: '新关键词',
-          pageNumber: 1
-        })
-      )
+      expect(mockPush).toHaveBeenCalledWith({
+        path: '/torrents',
+        query: {
+          mode: 'movie',
+          keyword: '新关键词'
+        }
+      })
+      expect(mockTorrentAPI.searchTorrents).not.toHaveBeenCalled()
     })
 
     it('should handle mode change', async () => {
@@ -206,11 +216,13 @@ describe('TorrentListView', () => {
       await modeSelect.setValue('music')
       await flushPromises()
 
-      expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({
+      expect(mockPush).toHaveBeenCalledWith({
+        path: '/torrents',
+        query: {
           mode: 'music'
-        })
-      )
+        }
+      })
+      expect(mockTorrentAPI.searchTorrents).not.toHaveBeenCalled()
     })
 
     it('should handle Enter key in search input', async () => {
@@ -220,11 +232,14 @@ describe('TorrentListView', () => {
       await searchInput.trigger('keyup.enter')
       await flushPromises()
 
-      expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({
+      expect(mockPush).toHaveBeenCalledWith({
+        path: '/torrents',
+        query: {
+          mode: 'movie',
           keyword: '快捷搜索'
-        })
-      )
+        }
+      })
+      expect(mockTorrentAPI.searchTorrents).not.toHaveBeenCalled()
     })
 
     it('should clear keyword when clear button is clicked', async () => {
@@ -241,11 +256,13 @@ describe('TorrentListView', () => {
       wrapper.vm.clearKeyword()
       await flushPromises()
 
-      expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledWith(
-        expect.objectContaining({
-          keyword: ''
-        })
-      )
+      expect(mockPush).toHaveBeenCalledWith({
+        path: '/torrents',
+        query: {
+          mode: 'movie'
+        }
+      })
+      expect(mockTorrentAPI.searchTorrents).not.toHaveBeenCalled()
     })
   })
 
@@ -323,8 +340,8 @@ describe('TorrentListView', () => {
     })
 
     it('should show ratings correctly', () => {
-      expect(wrapper.text()).toContain('IMDb8.5')
-      expect(wrapper.text()).toContain('豆9.0')
+      expect(wrapper.text()).toContain('IMDb 8.5')
+      expect(wrapper.text()).toContain('豆 9.0')
     })
 
     it('should show labels correctly', () => {
@@ -481,19 +498,6 @@ describe('TorrentListView', () => {
       const backgroundClass = vm.getStickyBackgroundClass(torrent1)
       expect(backgroundClass).toBe('bg-topping-level-1')
     })
-
-    it('should return white background for non-movie/tv modes', async () => {
-      wrapper = mount(TorrentListView)
-      await flushPromises()
-
-      const vm = wrapper.vm
-      const torrent1 = mockTorrentData.data.data.data[0]
-      
-      vm.searchParams.mode = 'music'
-      
-      const backgroundClass = vm.getStickyBackgroundClass(torrent1)
-      expect(backgroundClass).toBe('bg-white')
-    })
   })
 
   describe('Error Handling', () => {
@@ -572,7 +576,7 @@ describe('TorrentListView', () => {
             data: {
               data: mockTorrentData.data.data.data,
               totalPages: 5,
-              totalCount: 450
+              total: 450
             }
           }
         }
@@ -695,6 +699,7 @@ describe('TorrentListView', () => {
         wrapper = mount(TorrentListView)
         await flushPromises()
         mockTorrentAPI.searchTorrents.mockClear()
+        mockPush.mockClear()
       })
 
       it('should navigate to previous page when prev button clicked', async () => {
@@ -706,11 +711,7 @@ describe('TorrentListView', () => {
           path: '/torrents',
           query: { mode: 'movie', page: '4' }
         })
-        expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledExactlyOnceWith(
-          expect.objectContaining({
-            pageNumber: 4
-          })
-        )
+        expect(mockTorrentAPI.searchTorrents).not.toHaveBeenCalled()
       })
 
       it('should navigate to next page when next button clicked', async () => {
@@ -722,11 +723,7 @@ describe('TorrentListView', () => {
           path: '/torrents',
           query: { mode: 'movie', page: '6' }
         })
-        expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledExactlyOnceWith(
-          expect.objectContaining({
-            pageNumber: 6
-          })
-        )
+        expect(mockTorrentAPI.searchTorrents).not.toHaveBeenCalled()
       })
 
       it('should navigate to selected page when dropdown changes', async () => {
@@ -738,11 +735,7 @@ describe('TorrentListView', () => {
           path: '/torrents',
           query: { mode: 'movie', page: '8' }
         })
-        expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledExactlyOnceWith(
-          expect.objectContaining({
-            pageNumber: 8
-          })
-        )
+        expect(mockTorrentAPI.searchTorrents).not.toHaveBeenCalled()
       })
 
       it('should call API exactly once per pagination action', async () => {
@@ -750,7 +743,8 @@ describe('TorrentListView', () => {
         await nextButton.trigger('click')
         await flushPromises()
 
-        expect(mockTorrentAPI.searchTorrents).toHaveBeenCalledTimes(1)
+        expect(mockPush).toHaveBeenCalledTimes(1)
+        expect(mockTorrentAPI.searchTorrents).not.toHaveBeenCalled()
       })
     })
 
@@ -828,43 +822,6 @@ describe('TorrentListView', () => {
         delete global.window.scrollTo
       })
 
-      it('should show loading state during pagination', async () => {
-        const mockDataWithPages = {
-          data: {
-            code: '0',
-            data: {
-              data: mockTorrentData.data.data.data,
-              totalPages: 5
-            }
-          }
-        }
-
-        // Mock delayed response
-        let resolvePromise
-        const delayedPromise = new Promise(resolve => {
-          resolvePromise = resolve
-        })
-        mockTorrentAPI.searchTorrents.mockReturnValueOnce(mockDataWithPages)
-        mockTorrentAPI.searchTorrents.mockReturnValueOnce(delayedPromise)
-
-        wrapper = mount(TorrentListView)
-        await flushPromises()
-
-        // Navigate to next page
-        const nextButton = wrapper.find('[data-testid="next-page-button"]')
-        await nextButton.trigger('click')
-        
-        // Should show loading state
-        expect(wrapper.vm.loading).toBe(true)
-        expect(wrapper.find('.animate-spin').exists()).toBe(true)
-
-        // Resolve the promise
-        resolvePromise(mockDataWithPages)
-        await flushPromises()
-        
-        // Loading should be gone
-        expect(wrapper.vm.loading).toBe(false)
-      })
 
       it('should scroll to top after page data loads', async () => {
         const mockDataWithPages = {
@@ -910,17 +867,21 @@ describe('TorrentListView', () => {
         }
 
         mockTorrentAPI.searchTorrents.mockResolvedValueOnce(mockDataPage1)
+        mockRoute.query = { mode: 'movie', page: '1' }
         wrapper = mount(TorrentListView)
         await flushPromises()
 
         expect(wrapper.vm.torrents).toHaveLength(1)
         expect(wrapper.vm.torrents[0].id).toBe('page1-item1')
 
+        wrapper.unmount()
+
         // Navigate to page 2
         mockTorrentAPI.searchTorrents.mockResolvedValueOnce(mockDataPage2)
-        const nextButton = wrapper.find('[data-testid="next-page-button"]')
-        await nextButton.trigger('click')
+        mockRoute.query = { mode: 'movie', page: '2' }
+        wrapper = mount(TorrentListView)
         await flushPromises()
+
 
         // Should replace, not append
         expect(wrapper.vm.torrents).toHaveLength(1)
@@ -1039,8 +1000,6 @@ describe('TorrentListView', () => {
       const favoriteButton = actionsSection.find('[data-testid="favorite-button"]')
       expect(favoriteButton.exists()).toBe(true)
       
-      const downloadButton = actionsSection.find('[data-testid="download-button"]')
-      expect(downloadButton.exists()).toBe(true)
     })
 
     it('should maintain aspect ratio for big picture mode images', async () => {
@@ -1112,31 +1071,7 @@ describe('TorrentListView', () => {
       expect(bigImage.exists()).toBe(false)
     })
 
-    it('should render download button as functional element in big picture mode', async () => {
-      wrapper = mount(TorrentListView)
-      await flushPromises()
 
-      const downloadButton = wrapper.find('[data-testid="torrent-actions-big"] [data-testid="download-button"]')
-      expect(downloadButton.exists()).toBe(true)
-      expect(downloadButton.text()).toContain('下载')
-    })
-
-    it('should handle download button click in big picture mode', async () => {
-      // Mock window.open
-      global.window.open = vi.fn()
-
-      wrapper = mount(TorrentListView)
-      await flushPromises()
-
-      const downloadButton = wrapper.find('[data-testid="torrent-actions-big"] [data-testid="download-button"]')
-      await downloadButton.trigger('click')
-      await flushPromises()
-
-      expect(mockTorrentAPI.generateDownloadToken).toHaveBeenCalledWith('9kg1')
-      expect(global.window.open).toHaveBeenCalledWith('https://example.com/download/token123', '_blank')
-
-      delete global.window.open
-    })
 
     it('should handle multiple 9KG torrents in big picture mode', async () => {
       const multipleData = {

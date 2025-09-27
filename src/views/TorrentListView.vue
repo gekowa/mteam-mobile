@@ -494,7 +494,7 @@ export default {
         query.page = pageToUse.toString()
       }
 
-      console.log("pushing to route")
+      // console.log("pushing to route")
       // 推送到历史记录，但不触发重新加载
       router.push({
         path: '/torrents',
@@ -506,7 +506,7 @@ export default {
 
     // 搜索种子
     const searchTorrents = async () => {
-      console.log("searchTorrents")
+      // console.log("searchTorrents")
       try {
         // 检查是否已登录
         if (!authStore.isLoggedIn) {
@@ -672,22 +672,8 @@ export default {
       }
     }
 
-    // 处理路由变化，支持浏览器前进后退
-    // onBeforeRouteUpdate((to, from) => {
-    //   console.log("onBeforeRouteUpdate")
-    //   // 只有当查询参数真正改变时才重新搜索
-    //   if (JSON.stringify(to.query) !== JSON.stringify(from.query)) {
-    //     // 更新路由对象引用
-    //     Object.assign(route, to)
-    //     initFromUrlParams()
-    //     searchTorrents(true)
-    //   }
-    // })
-
     // 组件挂载时加载数据
     onMounted(() => {
-      torrentAPI.getCategoryList()
-
       // 首先从URL参数初始化搜索条件
       initFromUrlParams()
       searchTorrents(true)

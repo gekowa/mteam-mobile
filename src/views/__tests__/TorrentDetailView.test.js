@@ -54,6 +54,7 @@ describe('TorrentDetailView', () => {
   let wrapper
   let mockTorrentAPI
   let mockAuthStore
+  let consoleErrorSpy
 
   const mockTorrentDetail = {
     data: {
@@ -86,6 +87,9 @@ describe('TorrentDetailView', () => {
     // Setup Pinia
     const pinia = createPinia()
     setActivePinia(pinia)
+
+    // Spy on console.error
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     // Reset mocks
     vi.clearAllMocks()
@@ -132,6 +136,7 @@ describe('TorrentDetailView', () => {
     // Reset route params after each test
     mockRoute.params = { id: '123' }
     vi.restoreAllMocks()
+    consoleErrorSpy.mockRestore()
   })
 
   describe('Component Initialization', () => {
